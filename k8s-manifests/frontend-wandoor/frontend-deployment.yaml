@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wandoor-frontend
+  namespace: wandoor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wandoor-frontend
+  template:
+    metadata:
+      labels:
+        app: wandoor-frontend
+    spec:
+      containers:
+        - name: wandoor-frontend
+          image: ghcr.io/your-username/wandoor-frontend:latest # ganti sesuai nama image kamu
+          ports:
+            - containerPort: 80
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: VITE_API_URL
+              value: "http://wandoor-backend:8080" # sesuaikan dengan service backend di cluster
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          imagePullPolicy: Always
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: wandoor
+spec:
+  type: NodePort
+  selector:
+    app: wandoor-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080 # akses dari luar VM: http://<VM_EXTERNAL_IP>:30080
