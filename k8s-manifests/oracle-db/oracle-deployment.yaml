@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-db
+  namespace: wandoor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oracle-db
+  template:
+    metadata:
+      labels:
+        app: oracle-db
+    spec:
+      containers:
+        - name: oracle
+          image: gvenzl/oracle-free:23-slim
+          ports:
+            - containerPort: 1521
+              name: oracle
+            - containerPort: 5500
+              name: em-express
+          env:
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: ORACLE_PASSWORD
+            - name: ORACLE_DATABASE
+              value: "wandoor_db"
+            - name: APP_USER
+              value: "wandoor"
+            - name: APP_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: APP_USER_PASSWORD
+          volumeMounts:
+            - name: oracle-data
+              mountPath: /opt/oracle/oradata
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - echo 'SELECT 1 FROM dual;' | sqlplus -s system/$ORACLE_PASSWORD@//localhost:1521/FREEPDB1
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - echo 'SELECT 1 FROM dual;' | sqlplus -s system/$ORACLE_PASSWORD@//localhost:1521/FREEPDB1
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: oracle-data
+          persistentVolumeClaim:
+            claimName: oracle-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle-db-service
+  namespace: wandoor
+spec:
+  selector:
+    app: oracle-db
+  ports:
+    - name: oracle
+      port: 1521
+      targetPort: 1521
+      nodePort: 31521
+      protocol: TCP
+    - name: em-express
+      port: 5500
+      targetPort: 5500
+      nodePort: 31550
+      protocol: TCP
+  type: NodePort

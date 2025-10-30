@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wandoor-backend
+  namespace: wandoor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wandoor-backend
+  template:
+    metadata:
+      labels:
+        app: wandoor-backend
+    spec:
+      containers:
+        - name: backend
+          image: jrtr1/wandoor-backend-app:backend-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+              protocol: TCP
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:oracle:thin:@oracle-db-service:1521/wandoor_db"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "wandoor"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "root"
+            - name: SERVER_PORT
+              value: "8081"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: wandoor
+spec:
+  selector:
+    app: wandoor-backend
+  type: NodePort
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+      nodePort: 30080
+      protocol: TCP

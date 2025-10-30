@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: wandoor
+data:
+  SPRING_DATASOURCE_URL: "jdbc:oracle:thin:@oracle-db-service:1521/wandoor_db"
+  SPRING_DATASOURCE_USERNAME: "wandoor"
+  SPRING_DATASOURCE_PASSWORD: "root"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SERVER_PORT: "8081"
