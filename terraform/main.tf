@@ -1,98 +1,228 @@
-# Firewall Rules
-resource "google_compute_firewall" "allow_ssh" {
-  name    = "allow-ssh"
+# ==================== #
+# FIREWALL RULES
+# ==================== #
+
+resource "google_compute_firewall" "allow_master" {
+  name    = "wandoor-allow-master"
   network = "default"
   allow {
     protocol = "tcp"
-    ports    = ["22"]
+    ports    = ["22", "6443", "30443"] # SSH, K3s, ArgoCD
   }
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["k3s-vm"]
+  target_tags   = ["wandoor-master"]
 }
-resource "google_compute_firewall" "allow_k3s" {
-  name    = "allow-k3s"
+
+resource "google_compute_firewall" "allow_worker_app" {
+  name    = "wandoor-allow-worker-app"
   network = "default"
   allow {
     protocol = "tcp"
-    ports    = ["6443", "443", "80"] # K3s API, HTTPS, HTTP
+    ports    = ["80", "443", "3000", "8080"] # frontend + backend
   }
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["k3s-vm"]
+  target_tags   = ["wandoor-worker-2"]
 }
-resource "google_compute_firewall" "allow_argocd" {
-  name    = "allow-argocd"
+
+resource "google_compute_firewall" "allow_db_internal" {
+  name    = "wandoor-allow-db-internal"
   network = "default"
   allow {
     protocol = "tcp"
-    ports    = ["30080", "30443"] # ArgoCD NodePort
+    ports    = ["1521", "5500"]
+  }
+  source_tags = ["wandoor-master", "wandoor-worker-2"]
+  target_tags = ["wandoor-worker-1"]
+}
+
+resource "google_compute_firewall" "allow_lgtm" {
+  name    = "wandoor-allow-lgtm"
+  network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["3000", "3100", "3200", "9009"]
   }
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["k3s-vm"]
+  target_tags   = ["wandoor-monitoring"]
 }
-resource "google_compute_firewall" "allow_openvpn" {
-  name    = "allow-openvpn"
+
+resource "google_compute_firewall" "allow_k3s_internal" {
+  name    = "wandoor-allow-k3s-internal"
   network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["6443", "10250"]
+  }
   allow {
     protocol = "udp"
-    ports    = ["1194"]
+    ports    = ["8472"]
   }
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["k3s-vm"]
+  source_tags = ["wandoor-master", "wandoor-worker-2"]
+  target_tags = ["wandoor-master", "wandoor-worker-2"]
 }
-# VM Instance
-resource "google_compute_instance" "k3s_vm" {
-  name         = var.vm_name
-  machine_type = var.machine_type
+
+# ==================== #
+# VM1: MASTER NODE (ArgoCD)
+# ==================== #
+resource "google_compute_instance" "wandoor-master" {
+  name         = "wandoor-master"
+  machine_type = "e2-medium"
   zone         = var.zone
-  tags = ["k3s-vm"]
+  tags         = ["wandoor-master"]
+
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
-      size  = var.disk_size
-      type  = "pd-balanced"
+      image = "debian-cloud/debian-12"
+      size  = 30
+      type  = "pd-standard"
     }
   }
+
   network_interface {
     network = "default"
-    access_config {
-      // Ephemeral external IP
-    }
+    access_config {} # ✅ master tetap punya external IP
   }
-  metadata = {
-    enable-oslogin = "TRUE"
-  }
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+
+  metadata_startup_script = file("${path.module}/scripts/vm-master-init.sh")
+
   service_account {
     scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/monitoring.write",
+      "https://www.googleapis.com/auth/monitoring.write"
     ]
   }
 }
-# Static External IP (Optional tapi recommended)
-resource "google_compute_address" "k3s_ip" {
-  name   = "k3s-external-ip"
-  region = var.region
-}
-resource "google_compute_instance" "k3s_vm_with_static_ip" {
-  name         = var.vm_name
-  machine_type = var.machine_type
+
+# ==================== #
+# VM2: Wandoor DB (Oracle DB)
+# ==================== #
+resource "google_compute_instance" "wandoor-db" {
+  name         = "wandoor-db"
+  machine_type = "e2-standard-4"
   zone         = var.zone
-  tags = ["k3s-vm"]
+  tags         = ["wandoor-worker-1"]
+
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
-      size  = var.disk_size
+      image = "debian-cloud/debian-12"
+      size  = 80
+      type  = "pd-standard"
     }
   }
+
   network_interface {
     network = "default"
-    access_config {
-      nat_ip = google_compute_address.k3s_ip.address
+    access_config {}
+  }
+
+  metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
+
+  service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/monitoring.write"
+    ]
+  }
+}
+
+# ==================== #
+# VM3: WORKER 1 (FE & BE)
+# ==================== #
+resource "google_compute_instance" "wandoor-worker-1" {
+  name         = "wandoor-worker-1"
+  machine_type = "e2-standard-2"
+  zone         = var.zone
+  tags         = ["wandoor-worker-1"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-12"
+      size  = 30
+      type  = "pd-standard"
     }
   }
-  metadata_startup_script = file("${path.module}/startup-script.sh")
+
+  network_interface {
+    network = "default"
+    access_config {}
+  }
+
+  metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
+
   service_account {
-    scopes = ["cloud-platform"]
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/monitoring.write"
+    ]
+  }
+}
+
+# ==================== #
+# VM4: WORKER 2 (Frontend + Backend)
+# ==================== #
+resource "google_compute_instance" "wandoor-worker-2" {
+  name         = "wandoor-worker-2"
+  machine_type = "e2-standard-2"
+  zone         = var.zone
+  tags         = ["wandoor-worker-2"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-12"
+      size  = 30
+      type  = "pd-standard"
+    }
+  }
+
+  network_interface {
+    network = "default"
+    access_config {}
+  }
+
+  metadata = {
+    master_ip = google_compute_instance.wandoor-master.network_interface[0].network_ip
+  }
+
+  metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
+
+  service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/monitoring.write"
+    ]
+  }
+
+  depends_on = [google_compute_instance.wandoor-master]
+}
+
+# ==================== #
+# VM5: MONITORING (LGTM)
+# ==================== #
+resource "google_compute_instance" "wandoor-monitoring" {
+  name         = "wandoor-monitoring"
+  machine_type = "e2-medium"
+  zone         = var.zone
+  tags         = ["wandoor-monitoring"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-12"
+      size  = 20
+      type  = "pd-standard"
+    }
+  }
+
+  network_interface {
+    network = "default"
+    access_config {} # Monitoring tetap punya external IP
+  }
+
+  metadata_startup_script = file("${path.module}/scripts/init-common.sh")
+
+  service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/monitoring.write"
+    ]
   }
 }
