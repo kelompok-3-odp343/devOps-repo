@@ -45,4 +45,4 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 30080 # akses dari luar VM: http://<VM_EXTERNAL_IP>:30080
+      nodePort: 30081 # akses dari luar VM: http://<VM_EXTERNAL_IP>:30080
