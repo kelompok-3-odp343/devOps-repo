@@ -22,7 +22,7 @@ spec:
             - name: NODE_ENV
               value: "production"
             - name: VITE_API_URL
-              value: "http://backend-service:8081"  # FIX 2: Ganti service name & port
+              value: "http://backend-service:8080"  # FIX 2: Ganti service name & port
           resources:
             requests:
               cpu: "100m"
