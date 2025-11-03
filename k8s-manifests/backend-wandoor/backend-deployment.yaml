@@ -29,6 +29,12 @@ spec:
               value: "root"
             - name: SERVER_PORT
               value: "8081"
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              value: "rediswandoor"
           resources:
             requests:
               memory: "512Mi"
