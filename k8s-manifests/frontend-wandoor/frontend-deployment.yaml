@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: wandoor-frontend
-          image: ghcr.io/your-username/wandoor-frontend:latest # ganti sesuai nama image kamu
+          image: jrtr1/wandoor-frontend-app:latest # ganti sesuai nama image kamu
           ports:
             - containerPort: 80
           env:
