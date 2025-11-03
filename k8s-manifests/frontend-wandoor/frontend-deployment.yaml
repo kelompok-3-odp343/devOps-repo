@@ -15,14 +15,14 @@ spec:
     spec:
       containers:
         - name: wandoor-frontend
-          image: jrtr1/wandoor-frontend-app:latest # ganti sesuai nama image kamu
+          image: jrtr1/wandoor-frontend-app:frontend-latest  # FIX 1: Ganti tag jadi frontend-latest
           ports:
             - containerPort: 80
           env:
             - name: NODE_ENV
               value: "production"
             - name: VITE_API_URL
-              value: "http://wandoor-backend:8080" # sesuaikan dengan service backend di cluster
+              value: "http://backend-service:8081"  # FIX 2: Ganti service name & port
           resources:
             requests:
               cpu: "100m"
@@ -45,4 +45,4 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 30081 # akses dari luar VM: http://<VM_EXTERNAL_IP>:30080
+      nodePort: 30081
