@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: wandoor-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kelompok-3-odp343/infra.git
+    targetRevision: HEAD
+    path: k3s/backend-wandoor
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: wandoor
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
