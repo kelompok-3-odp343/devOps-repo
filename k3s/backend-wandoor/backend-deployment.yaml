@@ -22,7 +22,7 @@ spec:
               protocol: TCP
           env:
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:oracle:thin:@o10.148.15.217:1521/wandoor_db"
+              value: "jdbc:oracle:thin:@10.148.15.217:1521/wandoor_db"
             - name: SPRING_DATASOURCE_USERNAME
               value: "wandoor"
             - name: SPRING_DATASOURCE_PASSWORD
