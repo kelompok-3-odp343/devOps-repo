@@ -4,7 +4,7 @@ metadata:
   name: promtail-config
   namespace: monitoring
 data:
-  promtail.yaml: |
+  promtail.yaml: 
     server:
       http_listen_port: 3101
       grpc_listen_port: 0
