@@ -21,7 +21,7 @@ resource "google_compute_firewall" "allow_worker_app" {
     ports    = ["80", "443", "3000", "8080"] # frontend + backend
   }
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["wandoor-worker-2"]
+  target_tags   = ["wandoor-worker"]
 }
 
 resource "google_compute_firewall" "allow_db_internal" {
@@ -31,8 +31,8 @@ resource "google_compute_firewall" "allow_db_internal" {
     protocol = "tcp"
     ports    = ["1521", "5500"]
   }
-  source_tags = ["wandoor-master", "wandoor-worker-2"]
-  target_tags = ["wandoor-worker-1"]
+  source_tags = ["wandoor-master", "wandoor-worker"]
+  target_tags = ["wandoor-db"]
 }
 
 resource "google_compute_firewall" "allow_lgtm" {
@@ -40,12 +40,12 @@ resource "google_compute_firewall" "allow_lgtm" {
   network = "default"
   allow {
     protocol = "tcp"
-    ports    = ["3000", "3100", "3200", "9009"]
+    ports    = ["3000", "3100", "3200", "4320", "9009", "9090"]
   }
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["wandoor-monitoring"]
 }
-
+ 
 resource "google_compute_firewall" "allow_k3s_internal" {
   name    = "wandoor-allow-k3s-internal"
   network = "default"
@@ -57,8 +57,62 @@ resource "google_compute_firewall" "allow_k3s_internal" {
     protocol = "udp"
     ports    = ["8472"]
   }
-  source_tags = ["wandoor-master", "wandoor-worker-2"]
-  target_tags = ["wandoor-master", "wandoor-worker-2"]
+  source_tags = ["wandoor-master", "wandoor-worker"]
+  target_tags = ["wandoor-master", "wandoor-worker"]
+}
+
+resource "google_compute_firewall" "allow_frontend" {
+  name    = "wandoor-allow-frontend"
+  network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["30081"]
+  }
+  source_tags = ["0.0.0.0/0"]
+  target_tags = ["wandoor-master"]
+}
+
+resource "google_compute_firewall" "allow_backend" {
+  name    = "wandoor-allow-backend"
+  network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["30080"]
+  }
+  source_tags = ["0.0.0.0/0"]
+  target_tags = ["wandoor-master"]
+}
+
+resource "google_compute_firewall" "allow_openvpn" {
+  name    = "wandoor-allow-openvpn"
+  network = "default"
+  allow {
+    protocol = "udp"
+    ports    = ["1194"]
+  }
+  source_tags = ["0.0.0.0/0"]
+  target_tags = ["wandoor-master"]
+}
+
+resource "google_compute_firewall" "allow_node_exporter" {
+  name    = "wandoor-allow-node-exporter"
+  network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["9100"]
+  }
+  source_tags = ["0.0.0.0/0"]
+  target_tags = ["node-exporter"]
+}
+
+resource "google_compute_firewall" "allow_argocd_nodeport" {
+  name    = "wandoor-allow-argocd-nodeport"
+  network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["30808"]
+  }
+  source_tags = ["0.0.0.0/0"]
 }
 
 # ==================== #
@@ -100,7 +154,7 @@ resource "google_compute_instance" "wandoor-db" {
   name         = "wandoor-db"
   machine_type = "e2-standard-4"
   zone         = var.zone
-  tags         = ["wandoor-worker-1"]
+  tags         = ["wandoor-db"]
 
   boot_disk {
     initialize_params {
@@ -132,7 +186,7 @@ resource "google_compute_instance" "wandoor-worker-1" {
   name         = "wandoor-worker-1"
   machine_type = "e2-standard-2"
   zone         = var.zone
-  tags         = ["wandoor-worker-1"]
+  tags         = ["wandoor-worker"]
 
   boot_disk {
     initialize_params {
@@ -164,7 +218,7 @@ resource "google_compute_instance" "wandoor-worker-2" {
   name         = "wandoor-worker-2"
   machine_type = "e2-standard-2"
   zone         = var.zone
-  tags         = ["wandoor-worker-2"]
+  tags         = ["wandoor-worker"]
 
   boot_disk {
     initialize_params {
