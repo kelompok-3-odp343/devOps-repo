@@ -1,0 +1,107 @@
+---
+- name: Setup Oracle Database & Redis Server
+  hosts: db
+  become: yes
+  tasks:
+    # ==========================
+    # 1️⃣ Update sistem & install dependency dasar
+    # ==========================
+    - name: Install basic dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    # ==========================
+    # 2️⃣ Tambahkan repository resmi Docker & install
+    # ==========================
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker engine
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    # ==========================
+    # 3️⃣ Setup Oracle Database container
+    # ==========================
+    - name: Create Oracle data volume
+      shell: docker volume create oracle-data
+      args:
+        warn: false
+
+    - name: Run Oracle Database container
+      shell: |
+        if [ ! "$(docker ps -q -f name=oracle-db)" ]; then
+          docker run -d \
+            --name oracle-db \
+            -p 1521:1521 \
+            -p 5500:5500 \
+            -e ORACLE_PASSWORD=root \
+            -e ORACLE_DATABASE=wandoor_db \
+            -e APP_USER=wandoor \
+            -e APP_USER_PASSWORD=root \
+            -v oracle-data:/opt/oracle/oradata \
+            gvenzl/oracle-free:23-slim
+        fi
+      args:
+        executable: /bin/bash
+
+    # ==========================
+    # 4️⃣ Setup Redis container
+    # ==========================
+    - name: Create Redis data volume
+      shell: docker volume create redis-data
+      args:
+        warn: false
+
+    - name: Run Redis container
+      shell: |
+        if [ ! "$(docker ps -q -f name=redis-server)" ]; then
+          docker run -d \
+            --name redis-server \
+            -p 6379:6379 \
+            -v redis-data:/data \
+            redis:7.2-alpine \
+            redis-server --requirepass "rediswandoor"
+        fi
+      args:
+        executable: /bin/bash
+
+    # ==========================
+    # 5️⃣ Cek status container
+    # ==========================
+    - name: Check running containers
+      shell: docker ps
+      register: container_status
+
+    - debug:
+        msg: |
+          ✅ Oracle DB & Redis setup completed!
+          Oracle DB -> port 1521 | user: wandoor | pass: root
+          Redis -> port 6379 | password: rediswandoor
+
+          === Container Status ===
+          {{ container_status.stdout }}

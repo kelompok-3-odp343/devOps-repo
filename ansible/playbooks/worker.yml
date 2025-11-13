@@ -1,0 +1,72 @@
+---
+- name: 🧩 Setup K3s Worker Nodes
+  hosts: worker
+  become: yes
+  vars:
+    master_ip: "{{ hostvars['master'].ansible_host }}"
+    k3s_token_path: "/var/lib/rancher/k3s/server/node-token"
+    k3s_url: "https://{{ master_ip }}:6443"
+
+  tasks:
+    # ==========================
+    # 1️⃣ Pastikan dependency dasar terinstall
+    # ==========================
+    - name: Install basic dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+        state: present
+        update_cache: yes
+
+    # ==========================
+    # 2️⃣ Ambil token dari master node
+    # ==========================
+    - name: Fetch K3s join token from master
+      delegate_to: master
+      become: yes
+      slurp:
+        src: "{{ k3s_token_path }}"
+      register: master_token_raw
+
+    - name: Decode token dari master
+      set_fact:
+        k3s_token: "{{ master_token_raw.content | b64decode | trim }}"
+
+    # ==========================
+    # 3️⃣ Join worker ke cluster master
+    # ==========================
+    - name: Join worker ke K3s cluster
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -
+      args:
+        creates: /etc/systemd/system/k3s-agent.service
+      register: join_result
+
+    - name: Tampilkan hasil join
+      debug:
+        var: join_result.stdout
+
+    # ==========================
+    # 4️⃣ Pastikan service aktif
+    # ==========================
+    - name: Enable and start k3s-agent service
+      systemd:
+        name: k3s-agent
+        enabled: yes
+        state: started
+
+    # ==========================
+    # 5️⃣ Verifikasi koneksi ke master
+    # ==========================
+    - name: Verifikasi koneksi worker ke master
+      shell: |
+        kubectl get nodes
+      delegate_to: master
+      register: nodes_status
+      ignore_errors: yes
+
+    - name: Tampilkan hasil verifikasi
+      debug:
+        var: nodes_status.stdout

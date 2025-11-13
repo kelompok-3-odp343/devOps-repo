@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "GCP Project ID"
   type        = string
-  default     = "glowing-box-475105-p9"
+  default     = "wandoor-odpit343"
 }
 
 variable "region" {

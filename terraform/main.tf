@@ -68,7 +68,7 @@ resource "google_compute_firewall" "allow_frontend" {
     protocol = "tcp"
     ports    = ["30081"]
   }
-  source_tags = ["0.0.0.0/0"]
+  source_ranges = ["0.0.0.0/0"]
   target_tags = ["wandoor-master"]
 }
 
@@ -79,7 +79,7 @@ resource "google_compute_firewall" "allow_backend" {
     protocol = "tcp"
     ports    = ["30080"]
   }
-  source_tags = ["0.0.0.0/0"]
+  source_ranges = ["0.0.0.0/0"]
   target_tags = ["wandoor-master"]
 }
 
@@ -90,7 +90,7 @@ resource "google_compute_firewall" "allow_openvpn" {
     protocol = "udp"
     ports    = ["1194"]
   }
-  source_tags = ["0.0.0.0/0"]
+  source_ranges = ["0.0.0.0/0"]
   target_tags = ["wandoor-master"]
 }
 
@@ -101,7 +101,7 @@ resource "google_compute_firewall" "allow_node_exporter" {
     protocol = "tcp"
     ports    = ["9100"]
   }
-  source_tags = ["0.0.0.0/0"]
+  source_ranges = ["0.0.0.0/0"]
   target_tags = ["node-exporter"]
 }
 
@@ -112,7 +112,21 @@ resource "google_compute_firewall" "allow_argocd_nodeport" {
     protocol = "tcp"
     ports    = ["30808"]
   }
-  source_tags = ["0.0.0.0/0"]
+  source_ranges = ["0.0.0.0/0"]
+}
+
+# ==================== #
+# STATIC EXTERNAL IPs
+# ==================== #
+
+resource "google_compute_address" "master_ip" {
+  name = "wandoor-master-ip"
+  region = var.region
+}
+
+resource "google_compute_address" "db_ip" {
+  name = "wandoor-db-ip"
+  region = var.region
 }
 
 # ==================== #
@@ -134,7 +148,7 @@ resource "google_compute_instance" "wandoor-master" {
 
   network_interface {
     network = "default"
-    access_config {} # ✅ master tetap punya external IP
+    access_config {nat_ip = google_compute_address.master_ip.address} # ✅ master tetap punya external IP
   }
 
   metadata_startup_script = file("${path.module}/scripts/vm-master-init.sh")
@@ -166,7 +180,7 @@ resource "google_compute_instance" "wandoor-db" {
 
   network_interface {
     network = "default"
-    access_config {}
+    access_config {nat_ip = google_compute_address.db_ip.address}
   }
 
   metadata_startup_script = file("${path.module}/scripts/database-vm-init.sh")
