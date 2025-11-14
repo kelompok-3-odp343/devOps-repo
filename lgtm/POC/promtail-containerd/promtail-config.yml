@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: monitoring
+data:
+  promtail.yaml: 
+    server:
+      http_listen_port: 3101
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: http://10.148.15.213:3100/loki/api/v1/push
+
+    scrape_configs:
+      - job_name: kubernetes-pods
+        pipeline_stages:
+          - cri: {}  # pakai CRI untuk containerd, bukan docker
+          - json:
+              expressions:
+                level: level
+                message: message
+                logger: logger
+                thread: thread
+          - labels:
+              level:
+              logger:
+
+        kubernetes_sd_configs:
+          - role: pod
+
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app
+          - source_labels: [__meta_kubernetes_container_name]
+            target_label: container
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+
+          # path log untuk containerd (bukan Docker)
+          - source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_container_name]
+            separator: /
+            target_label: __path__
+            replacement: /var/log/pods/*$1*/$2/0.log
+
+      # opsional: log file custom springboot
+      - job_name: springboot-filelog
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: springboot-filelog
+              __path__: /var/log/springboot/*.log

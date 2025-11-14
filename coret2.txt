@@ -25,11 +25,15 @@ export K3S_NODE_NAME=wandoor-worker-1
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --node-ip=10.148.15.214" sh -
 
 ----------------------------------------------------------------------------------------------------------------
+inisialisasi vm master:
+
 curl -sfL https://get.k3s.io | sh -s - server \
   --cluster-init \
   --node-name=wandoor-master \
   --node-external-ip=10.148.15.215 \
   --flannel-backend=vxlan
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
 
 K10ec1c864e9582a19e5c0ef72fc34cf084682f15456f3c50ada7269fe851c13b48::server:3150770794d1c496173fb76ccb96fc89
 
@@ -67,3 +71,21 @@ token: K10a89678a91b9372f099f065e47a58cc4d163cdb44a8095834d9cf1dd0f3b457f7::serv
 EOF
 
 curl -sfL https://get.k3s.io | sh -s - agent
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+init vm master without traefik:
+
+curl -sfL https://get.k3s.io | sh -s - server \
+  --disable traefik \
+  --cluster-init \
+  --node-name=wandoor-master \
+  --node-external-ip=10.148.15.215 \
+  --flannel-backend=vxlan
+
+  ------------------------------------------------
+  terraform apply -replace="google_compute_instance.wandoor-master" -replace="google_compute_instance.wandoor-db" -replace="google_compute_instance.wandoor-worker-1" -replace="google_compute_instance.wandoor-worker-2" -replace="google_compute_instance.wandoor-monitoring"
+
+-------------------------------------------
+cara menjalankan file ansible:
+
+ansible-playbook -i inventory.ini playbooks/master.yml

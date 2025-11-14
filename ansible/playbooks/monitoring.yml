@@ -1,0 +1,184 @@
+---
+- name: 📊 Setup Monitoring Stack (LGTM)
+  hosts: monitoring
+  become: yes
+
+  vars:
+    monitoring_dir: /home/{{ ansible_user }}/monitoring
+
+  tasks:
+    # ==========================
+    # 1️⃣ Update sistem & install dependency dasar
+    # ==========================
+    - name: Update apt dan install dependency
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    # ==========================
+    # 2️⃣ Install Docker
+    # ==========================
+    - name: Cek apakah Docker sudah terpasang
+      command: docker --version
+      register: docker_check
+      ignore_errors: yes
+
+    - name: Install Docker jika belum terpasang
+      shell: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+        systemctl enable docker
+        systemctl start docker
+      when: docker_check.rc != 0
+
+    # ==========================
+    # 3️⃣ Install Docker Compose
+    # ==========================
+    - name: Cek apakah docker-compose sudah terpasang
+      command: docker-compose --version
+      register: compose_check
+      ignore_errors: yes
+
+    - name: Install docker-compose jika belum ada
+      shell: |
+        curl -L "https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      when: compose_check.rc != 0
+
+    # ==========================
+    # 4️⃣ Buat direktori monitoring
+    # ==========================
+    - name: Buat direktori monitoring stack
+      file:
+        path: "{{ monitoring_dir }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - prometheus
+        - loki
+        - tempo
+        - grafana
+
+    # ==========================
+    # 5️⃣ Buat konfigurasi Prometheus
+    # ==========================
+    - name: Buat file prometheus.yml
+      copy:
+        dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+        content: |
+          global:
+            scrape_interval: 15s
+
+          scrape_configs:
+            - job_name: 'kubernetes-nodes'
+              static_configs:
+                - targets: {% for host in groups['master'] + groups['monitoring'] %}
+                - '{{ hostvars[host].ansible_host }}:9100'
+                {% endfor %}
+                  labels:
+                    role: node
+
+            - job_name: 'prometheus'
+              static_configs:
+                - targets: ['localhost:9090']
+
+    # ==========================
+    # 6️⃣ Buat konfigurasi Tempo
+    # ==========================
+    - name: Buat file tempo-config.yml
+      copy:
+        dest: "{{ monitoring_dir }}/tempo/tempo-config.yml"
+        content: |
+          server:
+            http_listen_port: 3200
+
+          distributor:
+            receivers:
+              otlp:
+                protocols:
+                  http:
+                  grpc:
+
+          storage:
+            trace:
+              backend: local
+              local:
+                path: /tmp/tempo/traces
+
+    # ==========================
+    # 7️⃣ Buat docker-compose.yml
+    # ==========================
+    - name: Buat file docker-compose.yml
+      copy:
+        dest: "{{ monitoring_dir }}/docker-compose.yml"
+        content: |
+          version: '3.8'
+
+          services:
+            prometheus:
+              image: prom/prometheus
+              container_name: prometheus
+              restart: always
+              ports:
+                - "9090:9090"
+              volumes:
+                - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+            loki:
+              image: grafana/loki:2.9.0
+              container_name: loki
+              restart: always
+              ports:
+                - "3100:3100"
+              command: -config.file=/etc/loki/local-config.yaml
+
+            tempo:
+              image: grafana/tempo:2.4.1
+              container_name: tempo
+              restart: always
+              ports:
+                - "3200:3200"
+                - "4320:4317"
+                - "4321:4318"
+              volumes:
+                - ./tempo/tempo-config.yml:/etc/tempo/tempo.yml
+              command: -config.file=/etc/tempo/tempo.yml
+
+            grafana:
+              image: grafana/grafana:10.0.3
+              container_name: grafana
+              restart: always
+              ports:
+                - "3000:3000"
+              volumes:
+                - grafana-storage:/var/lib/grafana
+
+          volumes:
+            grafana-storage:
+
+    # ==========================
+    # 8️⃣ Jalankan Docker Compose
+    # ==========================
+    - name: Jalankan LGTM stack
+      shell: |
+        cd {{ monitoring_dir }}
+        docker-compose up -d
+      args:
+        chdir: "{{ monitoring_dir }}"
+
+    # ==========================
+    # 9️⃣ Tampilkan hasil
+    # ==========================
+    - name: Tampilkan informasi akses
+      debug:
+        msg:
+          - "✅ LGTM stack telah berjalan!"
+          - "Prometheus → http://{{ ansible_host }}:9090"
+          - "Loki → http://{{ ansible_host }}:3100"
+          - "Tempo → http://{{ ansible_host }}:3200"
+          - "Grafana → http://{{ ansible_host }}:3000 (user: admin / pass: admin)"

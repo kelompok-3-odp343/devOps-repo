@@ -1,0 +1,83 @@
+---
+- name: Setup K3s Master and ArgoCD
+  hosts: master
+  become: yes
+  vars:
+    k3s_install_script: https://get.k3s.io
+    argocd_namespace: argocd
+    argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+  tasks:
+    # ==========================
+    # 1️⃣ Pastikan dependency dasar terinstall
+    # ==========================
+    - name: Install basic dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+        state: present
+        update_cache: yes
+
+    # ==========================
+    # 2️⃣ Install K3s (jika belum ada)
+    # ==========================
+    - name: Install K3s master node
+      shell: |
+        curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --flannel-backend=vxlan
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Ensure K3s service is enabled and running
+      systemd:
+        name: k3s
+        enabled: yes
+        state: started
+
+    # ==========================
+    # 3️⃣ Tunggu K3s siap
+    # ==========================
+    - name: Wait for K3s to be ready
+      shell: kubectl get nodes
+      register: k3s_nodes
+      until: '"Ready" in k3s_nodes.stdout'
+      retries: 10
+      delay: 10
+
+    # ==========================
+    # 4️⃣ Install ArgoCD di namespace argocd
+    # ==========================
+    - name: Create namespace for ArgoCD
+      shell: kubectl create namespace {{ argocd_namespace }} || true
+
+    - name: Deploy ArgoCD manifests
+      shell: kubectl apply -n {{ argocd_namespace }} -f {{ argocd_manifest_url }}
+
+    # ==========================
+    # 5️⃣ Tunggu semua pod ArgoCD running
+    # ==========================
+    - name: Wait for ArgoCD pods to be ready
+      shell: kubectl get pods -n {{ argocd_namespace }} --no-headers
+      register: argocd_pods
+      until: "'Running' in argocd_pods.stdout"
+      retries: 20
+      delay: 15
+
+    # ==========================
+    # 6️⃣ Tampilkan password default admin ArgoCD
+    # ==========================
+    - name: Get ArgoCD admin password
+      shell: kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
+      register: argocd_password
+
+    - name: Show ArgoCD admin password
+      debug:
+        msg: "🔐 ArgoCD admin password: {{ argocd_password.stdout }}"
+
+    # ==========================
+    # 7️⃣ Ekspos ArgoCD lewat NodePort
+    # ==========================
+    - name: Patch ArgoCD server service to NodePort
+      shell: |
+        kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort"}}'

@@ -1,0 +1,12 @@
+---
+- name: Provision master node
+  import_playbook: playbooks/master.yml
+
+- name: Provision worker nodes
+  import_playbook: playbooks/worker.yml
+
+- name: Provision database node
+  import_playbook: playbooks/database.yml
+
+- name: Provision monitoring node
+  import_playbook: playbooks/monitoring.yml
