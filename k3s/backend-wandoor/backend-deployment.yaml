@@ -13,7 +13,6 @@ spec:
       labels:
         app: wandoor-backend
     spec:
-      # TAMBAHKAN INITCONTAINER INI
       initContainers:
         - name: download-otel-agent
           image: busybox:latest
@@ -50,22 +49,34 @@ spec:
             - name: REDIS_PASSWORD
               value: "rediswandoor"
 
-            # OTEL - GUNAKAN GRPC (4317) TANPA PATH
+            # ========================================
+            # OTEL - TRACES ONLY (NO METRICS, NO LOGS)
+            # ========================================
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://otel-collector.monitoring.svc.cluster.local:4317"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: "grpc"
 
-            # Disable metrics export (fokus ke traces dulu)
+            # HANYA EXPORT TRACES
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+
+            # DISABLE METRICS DAN LOGS
             - name: OTEL_METRICS_EXPORTER
+              value: "none"
+            - name: OTEL_LOGS_EXPORTER
               value: "none"
 
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: "service.name=wandoor-backend"
             - name: OTEL_TRACES_SAMPLER
               value: "always_on"
-            - name: OTEL_TRACES_EXPORTER
-              value: "otlp"
+
+            # DISABLE SPRING BOOT OTLP METRICS
+            - name: MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED
+              value: "false"
+            - name: MANAGEMENT_METRICS_EXPORT_OTLP_ENABLED
+              value: "false"
 
             - name: JAVA_TOOL_OPTIONS
               value: "-javaagent:/otel/opentelemetry-javaagent.jar"
