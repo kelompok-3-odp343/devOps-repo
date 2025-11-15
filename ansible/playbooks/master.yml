@@ -85,21 +85,26 @@
         sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort"}}'
 
     # ==========================
-    # 8️⃣ Clone Infra Repository
+    # 8️⃣ Clone or Update Infra Repository
     # ==========================
-    - name: Ensure repo directory exists
-      file:
-        path: "{{ repo_dir }}"
-        state: directory
-        owner: "{{ ansible_user | default('root') }}"
-        mode: "0755"
+    - name: Check if repo already exists
+      stat:
+        path: "{{ repo_dir }}/.git"
+      register: repo_git
 
-    - name: Clone infra repository
+    - name: Clone infra repository (first time)
       git:
         repo: "{{ repo_url }}"
         dest: "{{ repo_dir }}"
         version: main
         force: yes
+      when: not repo_git.stat.exists
+
+    - name: Pull latest changes (if repo already exists)
+      shell: git pull origin main
+      args:
+        chdir: "{{ repo_dir }}"
+      when: repo_git.stat.exists
 
     # ==========================
     # 9️⃣ Apply Backend & Frontend k3s Manifests
