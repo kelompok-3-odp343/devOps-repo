@@ -47,18 +47,30 @@
     # ==========================
     # 3️⃣ Install Docker
     # ==========================
-    - name: Cek apakah Docker sudah terpasang
-      command: docker --version
-      register: docker_check
-      ignore_errors: yes
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
 
-    - name: Install Docker jika belum terpasang
-      shell: |
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sh get-docker.sh
-        systemctl enable docker
-        systemctl start docker
-      when: docker_check.rc != 0
+    - name: Add Docker repository for Debian bookworm
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable"
+        state: present
+
+    - name: Install Docker engine
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
 
     # ==========================
     # 4️⃣ Install Docker Compose
