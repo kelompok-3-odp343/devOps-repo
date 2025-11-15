@@ -9,24 +9,24 @@
     compose_dir: "/opt/infra/database-wandoor"
 
   tasks:
-    # ============================================================
-    # 1️⃣ Bersihkan semua repo Docker salah (Ubuntu / invalid)
-    # ============================================================
+    # ==========================
+    # 1️⃣ Remove ANY invalid Docker repo
+    # ==========================
     - name: Remove invalid Docker repo files
       file:
         path: "{{ item }}"
         state: absent
       loop:
         - /etc/apt/sources.list.d/docker.list
-        - /etc/apt/sources.list.d/docker-ubuntu.list
         - /etc/apt/sources.list.d/docker-ce.list
         - /etc/apt/sources.list.d/download_docker_com.list
+        - /etc/apt/sources.list.d/docker-ubuntu.list
       ignore_errors: yes
 
-    # ============================================================
-    # 2️⃣ Install dependency dasar
-    # ============================================================
-    - name: Install basic dependencies
+    # ==========================
+    # 2️⃣ Install base dependencies
+    # ==========================
+    - name: Install required dependencies
       apt:
         name:
           - ca-certificates
@@ -37,39 +37,39 @@
         state: present
         update_cache: yes
 
-    # ============================================================
-    # 3️⃣ Setup GPG key Docker (versi resmi docker.asc)
-    # ============================================================
+    # ==========================
+    # 3️⃣ Official Docker Keyrings Setup (ASC format)
+    # ==========================
     - name: Ensure keyrings directory exists
       file:
         path: /etc/apt/keyrings
         state: directory
         mode: "0755"
 
-    - name: Download Docker GPG key (docker.asc)
+    - name: Download Docker official GPG key (.asc)
       get_url:
         url: https://download.docker.com/linux/debian/gpg
         dest: /etc/apt/keyrings/docker.asc
         mode: "0644"
 
-    # ============================================================
-    # 4️⃣ Tambah repo Docker resmi untuk Debian Bookworm
-    # ============================================================
-    - name: Add Docker repository using signed-by keyring
+    # ==========================
+    # 4️⃣ Setup Docker Repository (Bookworm)
+    # ==========================
+    - name: Add Docker repo for Debian Bookworm
       copy:
         dest: /etc/apt/sources.list.d/docker.list
         content: |
-          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable
         mode: "0644"
 
-    - name: Update apt cache after adding Docker repo
+    - name: apt update after adding repo
       apt:
         update_cache: yes
 
-    # ============================================================
-    # 5️⃣ Install Docker Engine + Compose plugin
-    # ============================================================
-    - name: Install Docker engine and components
+    # ==========================
+    # 5️⃣ Install Docker Engine + Compose
+    # ==========================
+    - name: Install Docker Engine & Docker Compose
       apt:
         name:
           - docker-ce
@@ -79,10 +79,16 @@
           - docker-compose-plugin
         state: present
 
-    # ============================================================
-    # 6️⃣ Clone/pull repo infra
-    # ============================================================
-    - name: Check if repo already exists
+    - name: Ensure Docker service running
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    # ==========================
+    # 6️⃣ Clone / Pull Repo
+    # ==========================
+    - name: Check if repo exists
       stat:
         path: "{{ repo_dir }}/.git"
       register: repo_git
@@ -101,22 +107,22 @@
         chdir: "{{ repo_dir }}"
       when: repo_git.stat.exists
 
-    # ============================================================
-    # 7️⃣ Jalankan docker compose
-    # ============================================================
+    # ==========================
+    # 7️⃣ Run Docker Compose
+    # ==========================
     - name: Run docker compose up -d
       shell: docker compose up -d
       args:
         chdir: "{{ compose_dir }}"
 
-    # ============================================================
-    # 8️⃣ Tampilkan status container
-    # ============================================================
+    # ==========================
+    # 8️⃣ Check status
+    # ==========================
     - name: Check running containers
       shell: docker ps
       register: container_status
 
     - debug:
         msg: |
-          🚀 Docker Compose Deployed!
+          Docker Compose Deployed!
           {{ container_status.stdout }}
