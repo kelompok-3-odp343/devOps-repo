@@ -16,59 +16,24 @@ data:
       - url: http://10.148.15.213:3100/loki/api/v1/push  # <== IP VM monitoring (Loki)
 
     scrape_configs:
-      # ================================
-      # 1️⃣ System Logs (syslog, auth, kernel, dsb.)
-      # ================================
-      - job_name: system-logs
-        static_configs:
-          - targets:
-              - localhost
-            labels:
-              job: system-logs
-              host: ${HOSTNAME}
-              __path__: /var/log/{syslog,auth.log,kern.log}
-
-      # ================================
-      # 2️⃣ Container Logs (semua container Docker/K8s)
-      # ================================
       - job_name: container-logs
         static_configs:
           - targets:
               - localhost
             labels:
-              host: ${HOSTNAME}
+              job: container-logs
               __path__: /var/log/containers/*.log
-        relabel_configs:
-          - target_label: job
-            replacement: container-logs
 
-      # ================================
-      # 3️⃣ Pod Logs (untuk log di /var/log/pods, termasuk wandoor-backend)
-      # ================================
-      - job_name: pod-logs
-        static_configs:
-          - targets:
-              - localhost
-            labels:
-              host: ${HOSTNAME}
-              __path__: /var/log/pods/**/*.log
-        relabel_configs:
-          - target_label: job
-            replacement: pod-logs
-          - source_labels: ['__path__']
-            target_label: 'filename'
+        pipeline_stages:
+          - regex:
+              expression: '(?P<pod>[^_]+)_(?P<namespace>[^_]+)_(?P<container>[^-]+)-(?P<container_id>.*).log'
+              source: filename
+          - labels:
+              pod:
+              namespace:
+              container:
+              container_id:
 
-      # ================================
-      # 4️⃣ Spring Boot / Backend Logs (log dari app di /var/log/springboot)
-      # ================================
-      - job_name: springboot-logs
-        static_configs:
-          - targets:
-              - localhost
-            labels:
-              job: springboot-logs
-              host: ${HOSTNAME}
-              __path__: /var/log/springboot/*.log
 ---
 apiVersion: apps/v1
 kind: DaemonSet
