@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/kelompok-3-odp343/infra.git
-    targetRevision: HEAD
+    targetRevision: main
     path: k3s/frontend-wandoor
   destination:
     server: https://kubernetes.default.svc
