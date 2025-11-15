@@ -10,23 +10,32 @@
 
   tasks:
     # ==========================
-    # 1️⃣ Remove ANY invalid Docker repo
+    # 1️⃣ Cleanup old Docker repo & keys
     # ==========================
-    - name: Remove invalid Docker repo files
+    - name: Remove old Docker repo files
       file:
         path: "{{ item }}"
         state: absent
       loop:
         - /etc/apt/sources.list.d/docker.list
         - /etc/apt/sources.list.d/docker-ce.list
-        - /etc/apt/sources.list.d/download_docker_com.list
         - /etc/apt/sources.list.d/docker-ubuntu.list
+        - /etc/apt/sources.list.d/download_docker_com.list
+      ignore_errors: yes
+
+    - name: Remove ALL old docker key files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/keyrings/docker.gpg
+        - /etc/apt/keyrings/docker.asc
       ignore_errors: yes
 
     # ==========================
     # 2️⃣ Install base dependencies
     # ==========================
-    - name: Install required dependencies
+    - name: Install basic dependencies
       apt:
         name:
           - ca-certificates
@@ -38,38 +47,35 @@
         update_cache: yes
 
     # ==========================
-    # 3️⃣ Official Docker Keyrings Setup (ASC format)
+    # 3️⃣ Setup Docker official GPG & repo
     # ==========================
-    - name: Ensure keyrings directory exists
+    - name: Ensure /etc/apt/keyrings exists
       file:
         path: /etc/apt/keyrings
         state: directory
         mode: "0755"
 
-    - name: Download Docker official GPG key (.asc)
+    - name: Download Docker official GPG key (ASC)
       get_url:
         url: https://download.docker.com/linux/debian/gpg
         dest: /etc/apt/keyrings/docker.asc
         mode: "0644"
 
-    # ==========================
-    # 4️⃣ Setup Docker Repository (Bookworm)
-    # ==========================
-    - name: Add Docker repo for Debian Bookworm
+    - name: Add Docker apt repository for Debian 12 Bookworm
       copy:
         dest: /etc/apt/sources.list.d/docker.list
         content: |
           deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable
         mode: "0644"
 
-    - name: apt update after adding repo
+    - name: Update apt cache
       apt:
         update_cache: yes
 
     # ==========================
-    # 5️⃣ Install Docker Engine + Compose
+    # 4️⃣ Install Docker Engine & Compose Plugin
     # ==========================
-    - name: Install Docker Engine & Docker Compose
+    - name: Install Docker engine
       apt:
         name:
           - docker-ce
@@ -79,16 +85,16 @@
           - docker-compose-plugin
         state: present
 
-    - name: Ensure Docker service running
+    - name: Ensure Docker is running
       systemd:
         name: docker
         enabled: yes
         state: started
 
     # ==========================
-    # 6️⃣ Clone / Pull Repo
+    # 5️⃣ Clone or update infra repo
     # ==========================
-    - name: Check if repo exists
+    - name: Check if infra repo exists
       stat:
         path: "{{ repo_dir }}/.git"
       register: repo_git
@@ -101,14 +107,14 @@
         force: yes
       when: not repo_git.stat.exists
 
-    - name: Pull latest changes (if exists)
+    - name: Pull latest changes (if repo already exists)
       shell: git pull origin main
       args:
         chdir: "{{ repo_dir }}"
       when: repo_git.stat.exists
 
     # ==========================
-    # 7️⃣ Run Docker Compose
+    # 6️⃣ Run docker compose
     # ==========================
     - name: Run docker compose up -d
       shell: docker compose up -d
@@ -116,7 +122,7 @@
         chdir: "{{ compose_dir }}"
 
     # ==========================
-    # 8️⃣ Check status
+    # 7️⃣ Show running containers
     # ==========================
     - name: Check running containers
       shell: docker ps
@@ -124,5 +130,6 @@
 
     - debug:
         msg: |
-          Docker Compose Deployed!
+          🚀 Docker Compose Deploy Completed!
+          === Container Status ===
           {{ container_status.stdout }}
