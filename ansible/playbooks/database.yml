@@ -15,10 +15,9 @@
     - name: Install basic dependencies
       apt:
         name:
-          - apt-transport-https
-          - ca-certificates
           - curl
-          - software-properties-common
+          - wget
+          - git
         state: present
         update_cache: yes
 
