@@ -1,42 +1,72 @@
 ---
-- name: Install Docker on Debian 12 (Bookworm)
+- name: Setup Oracle Database & Redis Server using Docker Compose
   hosts: db
   become: yes
 
+  vars:
+    repo_url: "https://github.com/kelompok-3-odp343/infra.git"
+    repo_dir: "/opt/infra"
+    compose_dir: "/opt/infra/database-wandoor"
+
   tasks:
-    - name: Install required packages
+    # ==========================
+    # 1️⃣ Bersihkan repo Docker yang salah
+    # ==========================
+    - name: Remove invalid Docker repo files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/sources.list.d/docker.list
+        - /etc/apt/sources.list.d/docker-ubuntu.list
+        - /etc/apt/sources.list.d/docker-ce.list
+        - /etc/apt/sources.list.d/download_docker_com.list
+      ignore_errors: yes
+
+    # ==========================
+    # 2️⃣ Install dependencies dasar
+    # ==========================
+    - name: Install basic dependencies
       apt:
         name:
           - ca-certificates
           - curl
+          - git
           - gnupg
           - lsb-release
         state: present
         update_cache: yes
 
-    - name: Create keyrings directory
+    # ==========================
+    # 3️⃣ Setup Docker repo resmi untuk Debian 12
+    # ==========================
+    - name: Ensure keyrings directory exists
       file:
         path: /etc/apt/keyrings
         state: directory
         mode: "0755"
 
-    - name: Add Docker GPG key
+    - name: Download Docker GPG key
       get_url:
         url: https://download.docker.com/linux/debian/gpg
         dest: /etc/apt/keyrings/docker.gpg
         mode: "0644"
 
-    - name: Add Docker repository (Debian 12 Bookworm)
+    - name: Add Docker repository (Debian Bookworm)
       copy:
         dest: /etc/apt/sources.list.d/docker.list
         content: |
           deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable
+        mode: "0644"
 
     - name: Update apt cache
       apt:
         update_cache: yes
 
-    - name: Install Docker Engine
+    # ==========================
+    # 4️⃣ Install Docker Engine + Compose plugin
+    # ==========================
+    - name: Install Docker engine
       apt:
         name:
           - docker-ce
@@ -49,5 +79,47 @@
     - name: Ensure Docker is running
       systemd:
         name: docker
-        state: started
         enabled: yes
+        state: started
+
+    # ==========================
+    # 5️⃣ Clone repo infra
+    # ==========================
+    - name: Check if repo already exists
+      stat:
+        path: "{{ repo_dir }}/.git"
+      register: repo_git
+
+    - name: Clone infra repository (first time)
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dir }}"
+        version: main
+        force: yes
+      when: not repo_git.stat.exists
+
+    - name: Pull latest changes (if exists)
+      shell: git pull origin main
+      args:
+        chdir: "{{ repo_dir }}"
+      when: repo_git.stat.exists
+
+    # ==========================
+    # 6️⃣ Jalankan docker-compose langsung dari repo
+    # ==========================
+    - name: Run docker compose up -d
+      shell: docker compose up -d
+      args:
+        chdir: "{{ compose_dir }}"
+
+    # ==========================
+    # 7️⃣ Tampilkan status container
+    # ==========================
+    - name: Check running containers
+      shell: docker ps
+      register: container_status
+
+    - debug:
+        msg: |
+          🚀 Docker Compose Deployed!
+          {{ container_status.stdout }}
