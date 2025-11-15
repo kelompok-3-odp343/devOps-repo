@@ -27,7 +27,7 @@
     # ==========================
     - name: Install K3s master node
       shell: |
-        curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --flannel-backend=vxlan
+        sudo curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --flannel-backend=vxlan
       args:
         creates: /usr/local/bin/k3s
 
@@ -41,7 +41,7 @@
     # 3️⃣ Wait for K3s Ready
     # ==========================
     - name: Wait for K3s to be ready
-      shell: kubectl get nodes
+      shell: sudo kubectl get nodes
       register: k3s_nodes
       until: '"Ready" in k3s_nodes.stdout'
       retries: 10
@@ -51,16 +51,16 @@
     # 4️⃣ Install ArgoCD
     # ==========================
     - name: Create namespace for ArgoCD
-      shell: kubectl create namespace {{ argocd_namespace }} || true
+      shell: sudo kubectl create namespace {{ argocd_namespace }} || true
 
     - name: Deploy ArgoCD manifests
-      shell: kubectl apply -n {{ argocd_namespace }} -f {{ argocd_manifest_url }}
+      shell: sudo kubectl apply -n {{ argocd_namespace }} -f {{ argocd_manifest_url }}
 
     # ==========================
     # 5️⃣ Wait for ArgoCD Pods Running
     # ==========================
     - name: Wait for ArgoCD pods to be ready
-      shell: kubectl get pods -n {{ argocd_namespace }} --no-headers
+      shell: sudo kubectl get pods -n {{ argocd_namespace }} --no-headers
       register: argocd_pods
       until: "'Running' in argocd_pods.stdout"
       retries: 20
@@ -70,7 +70,7 @@
     # 6️⃣ Show ArgoCD Admin Password
     # ==========================
     - name: Get ArgoCD admin password
-      shell: kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
+      shell: sudo kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
       register: argocd_password
 
     - name: Show ArgoCD admin password
@@ -82,7 +82,7 @@
     # ==========================
     - name: Patch ArgoCD server service to NodePort
       shell: |
-        kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort"}}'
+        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort"}}'
 
     # ==========================
     # 8️⃣ Clone Infra Repository
@@ -105,13 +105,13 @@
     # 9️⃣ Apply Backend & Frontend k3s Manifests
     # ==========================
     - name: Apply backend manifests
-      shell: kubectl apply -f {{ repo_dir }}/k3s/backend-wandoor/
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/backend-wandoor/
 
     - name: Apply frontend manifests
-      shell: kubectl apply -f {{ repo_dir }}/k3s/frontend-wandoor/
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/frontend-wandoor/
 
     # ==========================
     # 🔟 Apply ArgoCD Application Manifests (frontend, backend, database, monitoring)
     # ==========================
     - name: Apply ArgoCD application manifests
-      shell: kubectl apply -f {{ repo_dir }}/argoCD/
+      shell: sudo kubectl apply -f {{ repo_dir }}/argoCD/
