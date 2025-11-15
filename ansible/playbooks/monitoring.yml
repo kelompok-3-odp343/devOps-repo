@@ -111,4 +111,5 @@
       copy:
         src: "{{ repo_dir }}/monitoring-wandoor/docker-compose.yml"
         dest: "{{ monitoring_dir }}/docker-compose.yml"
+        remote_src: yes
         mode: "0644"
