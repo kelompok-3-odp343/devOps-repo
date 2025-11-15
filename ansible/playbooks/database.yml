@@ -10,63 +10,88 @@
 
   tasks:
     # ==========================
-    # 1️⃣ Install dependency dasar
+    # 0️⃣ FIX: Remove wrong Docker repo (Ubuntu bookworm)
     # ==========================
-    - name: Install basic dependencies
+    - name: Remove wrong docker repo if exists
+      file:
+        path: "/etc/apt/sources.list.d/docker.list"
+        state: absent
+
+    # ==========================
+    # 1️⃣ Install basic dependencies
+    # ==========================
+    - name: Install dependencies
       apt:
         name:
           - curl
           - wget
           - git
+          - ca-certificates
+          - apt-transport-https
+          - gnupg
         state: present
         update_cache: yes
 
     # ==========================
-    # 2️⃣ Install Docker Engine (Debian Bookworm)
+    # 2️⃣ Detect OS (Ubuntu/Debian)
+    # ==========================
+    - name: Get OS name
+      command: lsb_release -is
+      register: os_name_raw
+
+    - name: Get OS codename
+      command: lsb_release -cs
+      register: os_codename_raw
+
+    - set_fact:
+        os_name: "{{ os_name_raw.stdout | lower }}"
+        os_codename: "{{ os_codename_raw.stdout | lower }}"
+
+    - debug:
+        msg: "Detected OS: {{ os_name }} - {{ os_codename }}"
+
+    # ==========================
+    # 3️⃣ Add Docker GPG key + Repo (Auto OS)
     # ==========================
     - name: Add Docker GPG key
       apt_key:
-        url: https://download.docker.com/linux/debian/gpg
+        url: "https://download.docker.com/linux/{{ os_name }}/gpg"
         state: present
 
-    - name: Add Docker repository for Debian bookworm
+    - name: Add Docker repository
       apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable"
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ os_name }} {{ os_codename }} stable"
+        filename: docker
         state: present
 
-    - name: Install Docker engine
+    # ==========================
+    # 4️⃣ Install Docker Engine
+    # ==========================
+    - name: Install Docker packages
       apt:
         name:
           - docker-ce
           - docker-ce-cli
           - containerd.io
+          - docker-compose-plugin
         state: present
         update_cache: yes
 
-    - name: Ensure Docker service is running
+    - name: Ensure Docker is running
       systemd:
         name: docker
         enabled: yes
         state: started
 
     # ==========================
-    # 3️⃣ Install Docker Compose plugin
-    # ==========================
-    - name: Install docker compose plugin
-      apt:
-        name: docker-compose-plugin
-        state: present
-        update_cache: yes
-
-    # ==========================
-    # 4️⃣ Clone infra repository
+    # 5️⃣ Clone infra repo
     # ==========================
     - name: Check if repo already exists
       stat:
         path: "{{ repo_dir }}/.git"
       register: repo_git
 
-    - name: Clone infra repository (first time)
+    - name: Clone repository
       git:
         repo: "{{ repo_url }}"
         dest: "{{ repo_dir }}"
@@ -74,30 +99,26 @@
         force: yes
       when: not repo_git.stat.exists
 
-    - name: Pull latest changes (if repo exists)
+    - name: Pull latest changes
       shell: git pull origin main
       args:
         chdir: "{{ repo_dir }}"
       when: repo_git.stat.exists
 
     # ==========================
-    # 5️⃣ Jalankan docker-compose dari repo
+    # 6️⃣ Run docker compose up
     # ==========================
-    - name: Run docker compose up from repository
+    - name: Run docker compose
       shell: docker compose up -d
       args:
         chdir: "{{ compose_dir }}"
 
     # ==========================
-    # 6️⃣ Cek status container
+    # 7️⃣ Show container status
     # ==========================
-    - name: Check running containers
+    - name: Check containers
       shell: docker ps
       register: container_status
 
     - debug:
-        msg: |
-          ✅ Oracle DB & Redis deployed using docker-compose (via infra repo)!
-
-          === Container Status ===
-          {{ container_status.stdout }}
+        msg: "{{ container_status.stdout }}"
