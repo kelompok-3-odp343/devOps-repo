@@ -40,7 +40,7 @@ resource "google_compute_firewall" "allow_lgtm" {
   network = "default"
   allow {
     protocol = "tcp"
-    ports    = ["3000", "3100", "3200", "4320", "9009", "9090"]
+    ports    = ["3000", "3100", "3200","4317", "4318", "4320", "9009", "9090"]
   }
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["wandoor-monitoring"]
@@ -115,6 +115,16 @@ resource "google_compute_firewall" "allow_argocd_nodeport" {
   source_ranges = ["0.0.0.0/0"]
 }
 
+resource "google_compute_firewall" "allow_uptime_kuma" {
+  name    = "wandoor-allow-uptime-kuma"
+  network = "default"
+  allow {
+    protocol = "tcp"
+    ports    = ["3001"]
+  }
+  source_ranges = ["0.0.0.0/0"]
+}
+
 # ==================== #
 # STATIC EXTERNAL IPs
 # ==================== #
@@ -152,7 +162,7 @@ resource "google_compute_instance" "wandoor-master" {
   }
 
   metadata_startup_script = file("${path.module}/scripts/vm-master-init.sh")
-
+ 
   service_account {
     scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -183,7 +193,7 @@ resource "google_compute_instance" "wandoor-db" {
     access_config {nat_ip = google_compute_address.db_ip.address}
   }
 
-  metadata_startup_script = file("${path.module}/scripts/database-vm-init.sh")
+  # metadata_startup_script = file("${path.module}/scripts/database-vm-init.sh")
 
   service_account {
     scopes = [
@@ -212,10 +222,10 @@ resource "google_compute_instance" "wandoor-worker-1" {
 
   network_interface {
     network = "default"
-    access_config {}
+    # access_config {}
   }
 
-  metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
+  # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
 
   service_account {
     scopes = [
@@ -244,14 +254,14 @@ resource "google_compute_instance" "wandoor-worker-2" {
 
   network_interface {
     network = "default"
-    access_config {}
+    # access_config {}
   }
 
   metadata = {
     master_ip = google_compute_instance.wandoor-master.network_interface[0].network_ip
   }
 
-  metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
+  # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
 
   service_account {
     scopes = [
@@ -285,7 +295,7 @@ resource "google_compute_instance" "wandoor-monitoring" {
     access_config {} # Monitoring tetap punya external IP
   }
 
-  metadata_startup_script = file("${path.module}/scripts/init-common.sh")
+  # metadata_startup_script = file("${path.module}/scripts/init-common.sh")
 
   service_account {
     scopes = [

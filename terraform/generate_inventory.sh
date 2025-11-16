@@ -1,63 +1,54 @@
 #!/bin/bash
 set -e
 
-# -------------------------
-# Config
-# -------------------------
-DEFAULT_ANSIBLE_USER="ubuntu"
+OUTPUT_FILE="../ansible/inventory/inventory.ini"
 
-INVENTORY_DIR="../ansible/inventory"
-INVENTORY_PATH="$INVENTORY_DIR/inventory.ini"
-INVENTORY_JSON="$INVENTORY_DIR/inventory.json"
+echo "===== Generate Ansible Inventory From GCP Instances ====="
 
-mkdir -p "$INVENTORY_DIR"
+# Ambil semua VM dengan internal IP
+# Format output: NAME INTERNAL_IP
+VM_DATA=$(gcloud compute instances list --format="value(name,networkInterfaces[0].networkIP)")
 
-# -------------------------
-# Ambil output Terraform
-# -------------------------
-echo "📥 Mengambil data IP dari Terraform..."
-terraform output -json vm_ips > "$INVENTORY_JSON"
+# Helper function: ambil IP berdasarkan nama VM
+get_ip() {
+    echo "$VM_DATA" | awk -v name="$1" '$1 == name {print $2}'
+}
 
-# -------------------------
-# Ambil semua IP dari JSON
-# -------------------------
-MASTER_PUBLIC=$(jq -r '.master.public_ip // empty' "$INVENTORY_JSON")
-MASTER_PRIVATE=$(jq -r '.master.private_ip // empty' "$INVENTORY_JSON")
+MASTER_IP=$(get_ip "wandoor-master")
+DB_IP=$(get_ip "wandoor-db")
+MONITORING_IP=$(get_ip "wandoor-monitoring")
+WORKER1_IP=$(get_ip "wandoor-worker-1")
+WORKER2_IP=$(get_ip "wandoor-worker-2")
 
-DB_PUBLIC=$(jq -r '.db.public_ip // empty' "$INVENTORY_JSON")
-DB_PRIVATE=$(jq -r '.db.private_ip // empty' "$INVENTORY_JSON")
+echo "IP MASTER: $MASTER_IP"
+echo "IP DB: $DB_IP"
+echo "IP MONITORING: $MONITORING_IP"
+echo "IP WORKER-1: $WORKER1_IP"
+echo "IP WORKER-2: $WORKER2_IP"
 
-WORKER1_PUBLIC=$(jq -r '.worker_1.public_ip // empty' "$INVENTORY_JSON")
-WORKER1_PRIVATE=$(jq -r '.worker_1.private_ip // empty' "$INVENTORY_JSON")
+echo "===== Writing inventory.ini ====="
 
-WORKER2_PUBLIC=$(jq -r '.worker_2.public_ip // empty' "$INVENTORY_JSON")
-WORKER2_PRIVATE=$(jq -r '.worker_2.private_ip // empty' "$INVENTORY_JSON")
-
-MONITORING_PUBLIC=$(jq -r '.monitoring.public_ip // empty' "$INVENTORY_JSON")
-MONITORING_PRIVATE=$(jq -r '.monitoring.private_ip // empty' "$INVENTORY_JSON")
-
-# -------------------------
-# Tulis inventory.ini tanpa private key
-# -------------------------
-cat > "$INVENTORY_PATH" <<EOF
+cat <<EOF > $OUTPUT_FILE
 # Generated automatically by generate_inventory.sh
-# Default ansible user: $DEFAULT_ANSIBLE_USER
-# Jalankan dengan: ansible-playbook -i inventory.ini <playbook>.yml
+# Jalankan dengan: ansible-playbook -i inventory.ini site.yml
 
 [master]
-master ansible_host=${MASTER_PUBLIC:-} ansible_user=${DEFAULT_ANSIBLE_USER} private_ip=${MASTER_PRIVATE:-}
+master ansible_host=$MASTER_IP ansible_user=adamalhafizh23
 
 [db]
-db ansible_host=${DB_PUBLIC:-} ansible_user=${DEFAULT_ANSIBLE_USER} private_ip=${DB_PRIVATE:-}
+db ansible_host=$DB_IP ansible_user=adamalhafizh23
 
 [worker]
-worker1 ansible_host=${WORKER1_PUBLIC:-} ansible_user=${DEFAULT_ANSIBLE_USER} private_ip=${WORKER1_PRIVATE:-}
-worker2 ansible_host=${WORKER2_PUBLIC:-} ansible_user=${DEFAULT_ANSIBLE_USER} private_ip=${WORKER2_PRIVATE:-}
+wandoor-worker-1 ansible_host=$WORKER1_IP ansible_user=adamalhafizh23
+wandoor-worker-2 ansible_host=$WORKER2_IP ansible_user=adamalhafizh23
 
 [monitoring]
-monitoring ansible_host=${MONITORING_PUBLIC:-} ansible_user=${DEFAULT_ANSIBLE_USER} private_ip=${MONITORING_PRIVATE:-}
+monitoring ansible_host=$MONITORING_IP ansible_user=adamalhafizh23
+
+[all:vars]
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+ansible_python_interpreter=/usr/bin/python3
 EOF
 
-echo "✅ Inventory file generated at: $INVENTORY_PATH"
-echo ""
-cat "$INVENTORY_PATH"
+echo "===== Inventory generated: $OUTPUT_FILE ====="
