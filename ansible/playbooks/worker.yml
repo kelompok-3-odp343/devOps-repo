@@ -19,6 +19,8 @@
           - git
         state: present
         update_cache: yes
+      environment:
+        DEBIAN_FRONTEND: noninteractive
 
     # ==========================
     # 2️⃣ Ambil token dari master node
