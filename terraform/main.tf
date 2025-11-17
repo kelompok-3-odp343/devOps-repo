@@ -222,7 +222,7 @@ resource "google_compute_instance" "wandoor-worker-1" {
 
   network_interface {
     network = "default"
-    # access_config {}
+    access_config {}
   }
 
   # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
@@ -238,40 +238,40 @@ resource "google_compute_instance" "wandoor-worker-1" {
 # ==================== #
 # VM4: WORKER 2 (Frontend + Backend)
 # ==================== #
-resource "google_compute_instance" "wandoor-worker-2" {
-  name         = "wandoor-worker-2"
-  machine_type = "e2-standard-2"
-  zone         = var.zone
-  tags         = ["wandoor-worker"]
+# resource "google_compute_instance" "wandoor-worker-2" {
+#   name         = "wandoor-worker-2"
+#   machine_type = "e2-standard-2"
+#   zone         = var.zone
+#   tags         = ["wandoor-worker"]
 
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-12"
-      size  = 30
-      type  = "pd-standard"
-    }
-  }
+#   boot_disk {
+#     initialize_params {
+#       image = "debian-cloud/debian-12"
+#       size  = 30
+#       type  = "pd-standard"
+#     }
+#   }
 
-  network_interface {
-    network = "default"
-    # access_config {}
-  }
+#   network_interface {
+#     network = "default"
+#     # access_config {}
+#   }
 
-  metadata = {
-    master_ip = google_compute_instance.wandoor-master.network_interface[0].network_ip
-  }
+#   metadata = {
+#     master_ip = google_compute_instance.wandoor-master.network_interface[0].network_ip
+#   }
 
-  # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
+#   # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
 
-  service_account {
-    scopes = [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/monitoring.write"
-    ]
-  }
+#   service_account {
+#     scopes = [
+#       "https://www.googleapis.com/auth/cloud-platform",
+#       "https://www.googleapis.com/auth/monitoring.write"
+#     ]
+#   }
 
-  depends_on = [google_compute_instance.wandoor-master]
-}
+#   depends_on = [google_compute_instance.wandoor-master]
+# }
 
 # ==================== #
 # VM5: MONITORING (LGTM)
