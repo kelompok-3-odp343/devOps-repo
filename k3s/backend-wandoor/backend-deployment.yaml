@@ -35,7 +35,7 @@ spec:
               protocol: TCP
           env:
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:oracle:thin:@10.148.15.217:1521/wandoor_db"
+              value: "jdbc:oracle:thin:@wandoor-db:1521/wandoor_db"
             - name: SPRING_DATASOURCE_USERNAME
               value: "wandoor"
             - name: SPRING_DATASOURCE_PASSWORD
@@ -43,7 +43,7 @@ spec:
             - name: SERVER_PORT
               value: "8081"
             - name: REDIS_HOST
-              value: "redis-service"
+              value: "wandoor-db"
             - name: REDIS_PORT
               value: "6379"
             - name: REDIS_PASSWORD
