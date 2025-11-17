@@ -13,24 +13,6 @@
 
   tasks:
     # ==========================
-    # 0️⃣ Buat SSH Dynamic SOCKS Proxy
-    # ==========================
-    - name: Start SSH dynamic SOCKS proxy to master
-      shell: |
-        nohup ssh -i {{ ssh_private_key }} -D {{ local_socks_port }} -q -C -N {{ ssh_user }}@{{ master_ip }} > /tmp/ssh_socks.log 2>&1 &
-      args:
-        executable: /bin/bash
-
-    # ==========================
-    # 0️⃣ Buat SSH Local Port Forward
-    # ==========================
-    - name: Start SSH local port forwarding to master (3128)
-      shell: |
-        nohup ssh -i {{ ssh_private_key }} -L {{ local_forward_port }}:localhost:3128 -q -N {{ ssh_user }}@{{ master_ip }} > /tmp/ssh_forward.log 2>&1 &
-      args:
-        executable: /bin/bash
-
-    # ==========================
     # 1️⃣ Pastikan dependency dasar terinstall via proxy
     # ==========================
     - name: Install basic dependencies
