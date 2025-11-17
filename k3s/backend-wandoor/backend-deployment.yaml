@@ -50,34 +50,32 @@ spec:
               value: "rediswandoor"
 
             # ========================================
-            # OTEL - TRACES ONLY (NO METRICS, NO LOGS)
+            # OTEL - TRACES, METRICS, LOGS
             # ========================================
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://otel-collector.monitoring.svc.cluster.local:4317"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: "grpc"
 
-            # HANYA EXPORT TRACES
+            # ENABLE TRACES, METRICS, LOGS
             - name: OTEL_TRACES_EXPORTER
               value: "otlp"
-
-            # DISABLE METRICS DAN LOGS
             - name: OTEL_METRICS_EXPORTER
-              value: "none"
+              value: "otlp"
             - name: OTEL_LOGS_EXPORTER
-              value: "none"
+              value: "otlp"
 
+            # Resource Attributes
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: "service.name=wandoor-backend"
             - name: OTEL_TRACES_SAMPLER
               value: "always_on"
 
-            # DISABLE SPRING BOOT OTLP METRICS
-            - name: MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED
-              value: "false"
-            - name: MANAGEMENT_METRICS_EXPORT_OTLP_ENABLED
-              value: "false"
+            # OPTIONAL — biar log structured lebih bagus
+            - name: OTEL_LOGS_INCLUDE_STACKTRACE
+              value: "true"
 
+            # Java Agent Attachment
             - name: JAVA_TOOL_OPTIONS
               value: "-javaagent:/otel/opentelemetry-javaagent.jar"
 
