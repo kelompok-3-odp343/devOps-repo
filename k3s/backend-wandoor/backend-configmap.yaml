@@ -4,7 +4,7 @@ metadata:
   name: backend-config
   namespace: wandoor
 data:
-  SPRING_DATASOURCE_URL: "jdbc:oracle:thin:@wandoor-db/wandoor_db"
+  SPRING_DATASOURCE_URL: "jdbc:oracle:thin:@wandoor-db:1521/wandoor_db"
   SPRING_DATASOURCE_USERNAME: "wandoor"
   SPRING_DATASOURCE_PASSWORD: "root"
   SPRING_JPA_HIBERNATE_DDL_AUTO: "update"

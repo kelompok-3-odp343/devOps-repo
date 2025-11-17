@@ -16,42 +16,33 @@ spec:
       # -- INIT CONTAINER (Download java agent)
       initContainers:
         - name: download-otel-agent
-          image: busybox
+          image: busybox:latest
           command:
             - sh
             - -c
-            - >
-              wget https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar
-              -O /otel/opentelemetry-javaagent.jar
+            - |
+              wget -O /otel/opentelemetry-javaagent.jar \
+              https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar
           volumeMounts:
             - name: otel-agent
               mountPath: /otel
 
       containers:
         - name: backend
-          image: jrtr1/wandoor-backend-app:backend-3a3a027e17a08c80fa786330706e8c3753d3dfa7
+          image: jrtr1/wandoor-backend-app:backend-2dd09cec844d91e6fa4d79c232e5fce9a74393b0
           imagePullPolicy: Always
           ports:
             - containerPort: 8081
               protocol: TCP
-
           env:
-            # ============================
-            #      DATABASE CONFIG
-            # ============================
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:oracle:thin:@wandoor-db:1521/wandoor_db"
             - name: SPRING_DATASOURCE_USERNAME
               value: "wandoor"
             - name: SPRING_DATASOURCE_PASSWORD
               value: "root"
-
             - name: SERVER_PORT
               value: "8081"
-
-            # ============================
-            #      REDIS CONFIG
-            # ============================
             - name: REDIS_HOST
               value: "wandoor-db"
             - name: REDIS_PORT
@@ -59,33 +50,35 @@ spec:
             - name: REDIS_PASSWORD
               value: "rediswandoor"
 
-            # ============================
-            #      OTEL TRACING CONFIG
-            # ============================
-            # Endpoint harus ke OTEL Collector, bukan Tempo!
-            - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
+            # ========================================
+            # OTEL - TRACES, METRICS, LOGS
+            # ========================================
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: "grpc"
 
-            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
-              value: "http://otel-collector.monitoring.svc.cluster.local:4317"
+            # ENABLE TRACES, METRICS, LOGS
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
 
+            # Resource Attributes
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "service.name=wandoor-backend,service.namespace=wandoor"
-
+              value: "service.name=wandoor-backend"
             - name: OTEL_TRACES_SAMPLER
               value: "always_on"
 
-            # Jalankan Java dengan agent OTEL
+            # OPTIONAL — biar log structured lebih bagus
+            - name: OTEL_LOGS_INCLUDE_STACKTRACE
+              value: "true"
+
+            # Java Agent Attachment
             - name: JAVA_TOOL_OPTIONS
               value: "-javaagent:/otel/opentelemetry-javaagent.jar"
-
-          resources:
-            requests:
-              memory: "2Gi"
-              cpu: "500m"
-            limits:
-              memory: "2Gi"
-              cpu: "1000m"
 
           volumeMounts:
             - name: otel-agent

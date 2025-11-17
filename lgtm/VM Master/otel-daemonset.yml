@@ -15,7 +15,7 @@ data:
 
     exporters:
       otlp:
-        endpoint: "10.148.15.213:4317"  # IP VM monitoring (Tempo)
+        endpoint: "10.148.15.213:4320"  # IP VM monitoring (Tempo)
         tls:
           insecure: true
 
@@ -54,3 +54,19 @@ spec:
         - name: config
           configMap:
             name: otel-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: monitoring
+spec:
+  selector:
+    app: otel-collector
+  ports:
+    - name: grpc
+      port: 4317
+      targetPort: 4317
+    - name: http
+      port: 4318
+      targetPort: 4318
