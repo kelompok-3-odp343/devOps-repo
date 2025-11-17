@@ -53,7 +53,7 @@ spec:
             #      REDIS CONFIG
             # ============================
             - name: REDIS_HOST
-              value: "redis-service"
+              value: "wandoor-db"
             - name: REDIS_PORT
               value: "6379"
             - name: REDIS_PASSWORD
