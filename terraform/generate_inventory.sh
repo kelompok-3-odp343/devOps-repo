@@ -18,13 +18,11 @@ MASTER_IP=$(get_ip "wandoor-master")
 DB_IP=$(get_ip "wandoor-db")
 MONITORING_IP=$(get_ip "wandoor-monitoring")
 WORKER1_IP=$(get_ip "wandoor-worker-1")
-WORKER2_IP=$(get_ip "wandoor-worker-2")
 
 echo "IP MASTER: $MASTER_IP"
 echo "IP DB: $DB_IP"
 echo "IP MONITORING: $MONITORING_IP"
 echo "IP WORKER-1: $WORKER1_IP"
-echo "IP WORKER-2: $WORKER2_IP"
 
 echo "===== Writing inventory.ini ====="
 
@@ -40,7 +38,7 @@ db ansible_host=$DB_IP ansible_user=adamalhafizh23
 
 [worker]
 wandoor-worker-1 ansible_host=$WORKER1_IP ansible_user=adamalhafizh23
-wandoor-worker-2 ansible_host=$WORKER2_IP ansible_user=adamalhafizh23
+
 
 [monitoring]
 monitoring ansible_host=$MONITORING_IP ansible_user=adamalhafizh23

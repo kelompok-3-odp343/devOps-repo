@@ -20,10 +20,10 @@ output "vm_ips" {
       private_ip = google_compute_instance.wandoor-worker-1.network_interface[0].network_ip
       # public_ip  = google_compute_instance.wandoor-worker-1.network_interface[0].access_config[0].nat_ip
     }
-    worker2 = {
-      private_ip = google_compute_instance.wandoor-worker-2.network_interface[0].network_ip
-      # public_ip  = google_compute_instance.wandoor-worker-2.network_interface[0].access_config[0].nat_ip
-    }
+    # worker2 = {
+    #   private_ip = google_compute_instance.wandoor-worker-2.network_interface[0].network_ip
+    #   # public_ip  = google_compute_instance.wandoor-worker-2.network_interface[0].access_config[0].nat_ip
+    # }
   }
 }
 
