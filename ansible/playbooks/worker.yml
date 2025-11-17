@@ -23,10 +23,10 @@
           - git
         state: present
         update_cache: yes
-      environment:
-        DEBIAN_FRONTEND: noninteractive
-        http_proxy: "http://127.0.0.1:{{ local_forward_port }}"
-        https_proxy: "http://127.0.0.1:{{ local_forward_port }}"
+      # environment:
+      #   DEBIAN_FRONTEND: noninteractive
+      #   http_proxy: "http://127.0.0.1:{{ local_forward_port }}"
+      #   https_proxy: "http://127.0.0.1:{{ local_forward_port }}"
 
     # ==========================
     # 2️⃣ Ambil token dari master node
