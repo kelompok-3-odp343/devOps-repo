@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels:
+    app: node-exporter
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      hostNetwork: true # penting! agar terbuka di IP VM host
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --path.rootfs=/host
+            - --collector.filesystem.ignored-mount-points
+            - ^/(sys|proc|dev|host|etc)($|/)
+          ports:
+            - name: metrics
+              containerPort: 9100
+              hostPort: 9100 # buka port ke host VM
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - name: root
+              mountPath: /host
+              readOnly: true
+      volumes:
+        - name: root
+          hostPath:
+            path: /
+      tolerations:
+        - operator: Exists
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534

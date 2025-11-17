@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: monitoring
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 3101
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: http://10.148.15.213:3100/loki/api/v1/push  # <== IP VM monitoring (Loki)
+
+    scrape_configs:
+      - job_name: container-logs
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: container-logs
+              __path__: /var/log/containers/*.log
+
+        pipeline_stages:
+          # Extract metadata dari nama file log
+          - regex:
+              expression: '(?P<pod>[^_]+)_(?P<namespace>[^_]+)_(?P<container>[^-]+)-(?P<container_id>.*).log'
+              source: filename
+
+          - labels:
+              pod:
+              namespace:
+              container:
+              container_id:
+
+          # Extract JSON body kalau aplikasimu output JSON logs (Spring Boot)
+          - json:
+              expressions:
+                level: level
+                method: method
+                url: url
+                statusCode: statusCode
+                trace_id: trace_id
+                span_id: span_id
+                logger: logger
+
+          # Jadikan field di atas jadi LABEL
+          - labels:
+              level:
+              method:
+              url:
+              statusCode:
+              trace_id:
+              span_id:
+              logger:
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: monitoring
+  labels:
+    app: promtail
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  template:
+    metadata:
+      labels:
+        app: promtail
+    spec:
+      serviceAccountName: promtail
+      containers:
+        - name: promtail
+          image: grafana/promtail:2.9.1
+          args:
+            - -config.file=/etc/promtail/promtail.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /etc/promtail
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: pods
+              mountPath: /var/log/pods
+              readOnly: true
+            - name: containers
+              mountPath: /var/lib/containers
+              readOnly: true
+            - name: springboot-logs
+              mountPath: /var/log/springboot
+      volumes:
+        - name: config
+          configMap:
+            name: promtail-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: pods
+          hostPath:
+            path: /var/log/pods
+        - name: containers
+          hostPath:
+            path: /var/lib/containers
+        - name: springboot-logs
+          hostPath:
+            path: /var/log/springboot
