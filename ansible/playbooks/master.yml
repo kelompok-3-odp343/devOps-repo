@@ -87,6 +87,9 @@
     # ==========================
     # 8️⃣ Clone or Update Infra Repository
     # ==========================
+    - name: Allow repo directory as safe
+      ansible.builtin.command: sudo git config --global --add safe.directory /home/infra
+
     - name: Check if repo already exists
       stat:
         path: "{{ repo_dir }}/.git"
@@ -101,7 +104,7 @@
       when: not repo_git.stat.exists
 
     - name: Pull latest changes (if repo already exists)
-      shell: git pull origin main
+      shell: sudo git pull origin main
       args:
         chdir: "{{ repo_dir }}"
       when: repo_git.stat.exists
