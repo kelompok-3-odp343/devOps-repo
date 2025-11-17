@@ -6,10 +6,32 @@
     master_ip: "{{ hostvars['master'].ansible_host }}"
     k3s_token_path: "/var/lib/rancher/k3s/server/node-token"
     k3s_url: "https://{{ master_ip }}:6443"
+    ssh_user: "your-ssh-user" # ganti sesuai user SSH ke master
+    ssh_private_key: "/home/{{ ansible_user }}/.ssh/id_rsa" # path key privat jika pakai key
+    local_socks_port: 1080
+    local_forward_port: 3128
 
   tasks:
     # ==========================
-    # 1️⃣ Pastikan dependency dasar terinstall
+    # 0️⃣ Buat SSH Dynamic SOCKS Proxy
+    # ==========================
+    - name: Start SSH dynamic SOCKS proxy to master
+      shell: |
+        nohup ssh -i {{ ssh_private_key }} -D {{ local_socks_port }} -q -C -N {{ ssh_user }}@{{ master_ip }} > /tmp/ssh_socks.log 2>&1 &
+      args:
+        executable: /bin/bash
+
+    # ==========================
+    # 0️⃣ Buat SSH Local Port Forward
+    # ==========================
+    - name: Start SSH local port forwarding to master (3128)
+      shell: |
+        nohup ssh -i {{ ssh_private_key }} -L {{ local_forward_port }}:localhost:3128 -q -N {{ ssh_user }}@{{ master_ip }} > /tmp/ssh_forward.log 2>&1 &
+      args:
+        executable: /bin/bash
+
+    # ==========================
+    # 1️⃣ Pastikan dependency dasar terinstall via proxy
     # ==========================
     - name: Install basic dependencies
       apt:
@@ -21,6 +43,8 @@
         update_cache: yes
       environment:
         DEBIAN_FRONTEND: noninteractive
+        http_proxy: "http://127.0.0.1:{{ local_forward_port }}"
+        https_proxy: "http://127.0.0.1:{{ local_forward_port }}"
 
     # ==========================
     # 2️⃣ Ambil token dari master node
