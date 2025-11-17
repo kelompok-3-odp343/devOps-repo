@@ -110,7 +110,7 @@ resource "google_compute_firewall" "allow_argocd_nodeport" {
   network = "default"
   allow {
     protocol = "tcp"
-    ports    = ["30808"]
+    ports    = ["31453"]
   }
   source_ranges = ["0.0.0.0/0"]
 }
