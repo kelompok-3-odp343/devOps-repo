@@ -15,7 +15,7 @@ data:
 
     exporters:
       otlp:
-        endpoint: "10.148.15.213:4317"  # IP VM monitoring (Tempo)
+        endpoint: "10.148.15.213:4320"  # IP VM monitoring (Tempo)
         tls:
           insecure: true
 
