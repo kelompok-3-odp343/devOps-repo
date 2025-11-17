@@ -1,71 +1,53 @@
 #!/bin/bash
 set -e
 
-# ==================================================
-# 1️⃣ Update & Install Dependencies
-# ==================================================
-sudo apt-get update -y
-sudo apt-get install -y curl
+echo "===== [1] Update system ====="
+apt update -y
+apt upgrade -y
 
-# ==================================================
-# 2️⃣ Install K3s Master Node
-# ==================================================
-curl -sfL https://get.k3s.io | sh -s - server \
-  --cluster-init \
-  --node-name=wandoor-master \
-  --node-external-ip=10.148.15.215 \
-  --flannel-backend=vxlan
+echo "===== [2] Install dependencies ====="
+apt install -y python3 python3-pip python3-venv git openssh-client google-cloud-cli
 
-# Pastikan service aktif
-sudo systemctl enable k3s
-sudo systemctl start k3s
+echo "===== [3] Install Ansible (from APT, NOT pip) ====="
+apt install -y ansible
 
-echo "=================================================="
-echo "✅ K3s Master setup complete!"
-echo "📍 Worker Token:"
-sudo cat /var/lib/rancher/k3s/server/node-token
-echo "=================================================="
+echo "===== [4] Set timezone ====="
+timedatectl set-timezone Asia/Jakarta
 
-# Tunggu beberapa detik agar kube-apiserver siap
-sleep 10
+echo "===== [5] Prepare Ansible directory ====="
+mkdir -p /home/adamalhafizh23/ansible
+chown -R adamalhafizh23:adamalhafizh23 /home/adamalhafizh23/
 
-# ==================================================
-# 3️⃣ Install ArgoCD di Namespace 'argocd'
-# ==================================================
-echo "🚀 Installing ArgoCD..."
+echo "===== [6] Enable SSH Agent Forwarding ====="
+mkdir -p /home/adamalhafizh23/.ssh
+cat <<EOF > /home/adamalhafizh23/.ssh/config
+Host *
+    ForwardAgent yes
+EOF
+chmod 600 /home/adamalhafizh23/.ssh/config
+chown adamalhafizh23:adamalhafizh23 /home/adamalhafizh23/.ssh/config
 
-# Buat namespace argocd
-sudo kubectl create namespace argocd || true
+echo "===== [7] Generate SSH key ====="
+sudo -u adamalhafizh23 ssh-keygen -t rsa -b 4096 -N "" -f /home/adamalhafizh23/.ssh/id_rsa
 
-# Deploy ArgoCD menggunakan manifest resmi
-sudo kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+PUBKEY=$(cat /home/adamalhafizh23/.ssh/id_rsa.pub)
 
-# Tunggu semua pod ArgoCD siap (opsional)
-echo "⏳ Menunggu ArgoCD pods siap..."
-sudo kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd || true
+echo "===== [8] Register public key at PROJECT level ====="
+echo "adamalhafizh23:$PUBKEY" > /tmp/sshkey.txt
 
-# ==================================================
-# 4️⃣ Ekspose ArgoCD via NodePort (biar bisa diakses dari luar)
-# ==================================================
-echo "🌐 Exposing ArgoCD Server via NodePort..."
+PROJECT_ID=$(gcloud config get-value project)
 
-sudo kubectl patch svc argocd-server -n argocd -p '{
-  "spec": {
-    "type": "NodePort",
-    "ports": [
-      {
-        "port": 443,
-        "targetPort": 8080,
-        "nodePort": 30080
-      }
-    ]
-  }
-}'
+gcloud compute project-info add-metadata \
+  --metadata-from-file ssh-keys=/tmp/sshkey.txt \
+  --project "$PROJECT_ID"
 
-echo "=================================================="
-echo "✅ ArgoCD installed successfully!"
-echo "🌍 Access via: https://10.148.15.215:30080"
-echo "🔑 Initial admin password:"
-sudo kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-echo ""
-echo "=================================================="
+echo "===== [9] Clone infra repo ====="
+mkdir -p /home
+sudo git clone https://github.com/kelompok-3-odp343/infra.git /home/infra
+chown -R adamalhafizh23:adamalhafizh23 /home/infra
+sudo chmod +x /home/infra/terraform/generate_inventory.sh
+/home/infra/terraform/generate_inventory.sh
+
+
+echo "===== SSH key added for ALL instances in project ====="
+echo "===== MASTER READY ====="
