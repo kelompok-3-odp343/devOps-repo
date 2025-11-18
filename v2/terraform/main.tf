@@ -254,7 +254,7 @@ resource "google_compute_instance" "wandoor-worker-2" {
 
   network_interface {
     network = "default"
-    # access_config {}
+    access_config {}
   }
 
   metadata = {
