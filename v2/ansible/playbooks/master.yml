@@ -5,7 +5,7 @@
   vars:
     k3s_install_script: https://get.k3s.io
     argocd_namespace: argocd
-    argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    argocd_manifest_url: https://github.com/argoproj/argo-cd/manifests/crds\?ref\=stable
     repo_url: https://github.com/kelompok-3-odp343/infra.git
     repo_dir: /home/infra
 

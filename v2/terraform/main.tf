@@ -210,7 +210,7 @@ resource "google_compute_instance" "wandoor-worker-1" {
   name         = "wandoor-worker-1"
   machine_type = "e2-standard-2"
   zone         = var.zone
-  tags         = ["wandoor-worker"]
+  tags         = ["wandoor-worker-1"]
 
   boot_disk {
     initialize_params {
@@ -242,7 +242,7 @@ resource "google_compute_instance" "wandoor-worker-2" {
   name         = "wandoor-worker-2"
   machine_type = "e2-standard-2"
   zone         = var.zone
-  tags         = ["wandoor-worker"]
+  tags         = ["wandoor-worker-2"]
 
   boot_disk {
     initialize_params {
