@@ -7,6 +7,5 @@
 
 - name: Provision database node
   import_playbook: playbooks/database.yml
-
-- name: Provision monitoring node
-  import_playbook: playbooks/monitoring.yml
+# - name: Provision monitoring node
+#   import_playbook: playbooks/monitoring.yml
