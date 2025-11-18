@@ -97,7 +97,7 @@
     # ==========================
     # 9️⃣ Apply Backend & Frontend k3s Manifests
     # ==========================
-    - name: Apply namespace manifests
+    - name: Apply database manifests
       shell: sudo kubectl apply -f {{ repo_dir }}v2/k3s-manifests/database-wandoor/
 
     # # ==========================
