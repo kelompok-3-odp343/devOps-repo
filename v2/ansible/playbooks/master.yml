@@ -107,7 +107,7 @@
     # ==========================
     - name: Patch ArgoCD server service to NodePort
       shell: |
-        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort"}}'
+        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort", "ports": [{"port": 80, "nodePort": 31453}]}}'
 
     # ==========================
     # 8️⃣ Clone or Update Infra Repository
