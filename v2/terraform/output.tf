@@ -36,8 +36,9 @@ output "vm_ips" {
   output "ssh_commands" {
     description = "SSH Commands"
     value = {
-      vm1 = "gcloud compute ssh wandoor-app --zone=${var.zone}"
+      vm1 = "gcloud compute ssh wandoor-master --zone=${var.zone}"
       vm2 = "gcloud compute ssh wandoor-db --zone=${var.zone} --internal-ip"
-      vm3 = "gcloud compute ssh wandoor-monitoring --zone=${var.zone}"
+      vm3 = "gcloud compute ssh wandoor-worker-1 --zone=${var.zone}"
+      vm4 = "gcloud compute ssh wandoor-worker-2 --zone=${var.zone}"
     }
   }
