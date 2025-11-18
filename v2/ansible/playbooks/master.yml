@@ -25,11 +25,36 @@
     # ==========================
     # 2️⃣ Install K3s Master
     # ==========================
+    - name: Cek apakah k3s service ada
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: k3s_service
+
+    - name: Hentikan dan hapus k3s jika service ada
+      when: k3s_service.stat.exists
+      block:
+        - name: Stop k3s service
+          systemd:
+            name: k3s
+            state: stopped
+            enabled: no
+
+        - name: Remove k3s binary dan service file
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /usr/local/bin/k3s
+            - /etc/systemd/system/k3s.service
+
+        - name: Reload systemd daemon
+          command: systemctl daemon-reload
+
     - name: Install K3s master node
       shell: |
         sudo curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --flannel-backend=vxlan
       args:
-        creates: /usr/local/bin/k3s
+        creates: /usr/local/bin/k3s.service
 
     - name: Ensure K3s service is enabled and running
       systemd:
