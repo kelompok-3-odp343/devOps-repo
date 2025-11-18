@@ -5,7 +5,7 @@
   vars:
     k3s_install_script: https://get.k3s.io
     argocd_namespace: argocd
-    argocd_manifest_url: https://github.com/argoproj/argo-cd/manifests/crds\?ref\=stable
+    argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
     repo_url: https://github.com/kelompok-3-odp343/infra.git
     repo_dir: /home/infra
 
@@ -82,7 +82,8 @@
     # ==========================
     - name: Patch ArgoCD server service to NodePort
       shell: |
-        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort", "ports":[{"port": 443,"targetPort": 443,"nodePort": 31453}]}}'
+        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p 
+        # '{"spec": {"type": "NodePort", "ports":[{"port": 443,"targetPort": 443,"nodePort": 31453}]}}'
 
     # ==========================
     # 8️⃣ Clone or Update Infra Repository
