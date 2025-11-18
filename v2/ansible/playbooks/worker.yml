@@ -45,26 +45,6 @@
     # ==========================
     # 3️⃣ Join worker ke cluster master
     # ==========================
-    - name: Join worker ke K3s cluster
-      shell: |
-        curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -
-      args:
-        creates: /etc/systemd/system/k3s-agent.service
-      register: join_result
-
-    - name: Tampilkan hasil join
-      debug:
-        var: join_result.stdout
-
-    # ==========================
-    # 4️⃣ Pastikan service aktif
-    # ==========================
-    - name: Enable and start k3s-agent service
-      systemd:
-        name: k3s-agent
-        enabled: yes
-        state: started
-
     - name: Cek apakah k3s-agent service ada
       stat:
         path: /etc/systemd/system/k3s-agent.service
@@ -95,6 +75,15 @@
         curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -
       args:
         creates: /usr/local/bin/k3s
+
+    # ==========================
+    # 4️⃣ Pastikan service aktif
+    # ==========================
+    - name: Enable and start k3s-agent service
+      systemd:
+        name: k3s-agent
+        enabled: yes
+        state: started
 
     # ==========================
     # 5️⃣ Verifikasi koneksi ke master
