@@ -16,8 +16,6 @@ metadata:
 spec:
   replicas: 1
   selector:
-    nodeSelector:
-      kubernetes.io/hostname: wandoor-worker-1
     matchLabels:
       app: grafana
   template:
@@ -25,6 +23,8 @@ spec:
       labels:
         app: grafana
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: wandoor-worker-1
       containers:
         - name: grafana
           image: grafana/grafana:10.0.3
