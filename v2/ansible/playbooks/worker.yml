@@ -65,6 +65,37 @@
         enabled: yes
         state: started
 
+    - name: Cek apakah k3s-agent service ada
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service
+
+    - name: Hentikan dan hapus k3s-agent jika service ada
+      when: k3s_agent_service.stat.exists
+      block:
+        - name: Stop k3s-agent service
+          systemd:
+            name: k3s-agent
+            state: stopped
+            enabled: no
+
+        - name: Remove k3s-agent binary dan service file
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /usr/local/bin/k3s-agent
+            - /etc/systemd/system/k3s-agent.service
+
+        - name: Reload systemd daemon
+          command: systemctl daemon-reload
+
+    - name: Install/join k3s-agent ke master
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -
+      args:
+        creates: /usr/local/bin/k3s
+
     # ==========================
     # 5️⃣ Verifikasi koneksi ke master
     # ==========================

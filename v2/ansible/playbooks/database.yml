@@ -64,17 +64,6 @@
         enabled: yes
         state: started
 
-    # ==========================
-    # 5️⃣ Verifikasi koneksi ke master
-    #     # ==========================
-    # - name: Pastikan k3s-agent di worker join dengan master
-    #   hosts: workers
-    #   become: yes
-    #   vars:
-    #     k3s_master_url: "https://{{ hostvars['master']['ansible_host'] }}:6443"
-    #     k3s_token: "{{ hostvars['master']['k3s_node_token'] }}"
-
-    #   tasks:
     - name: Cek apakah k3s-agent service ada
       stat:
         path: /etc/systemd/system/k3s-agent.service
@@ -105,12 +94,6 @@
         curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -
       args:
         creates: /usr/local/bin/k3s
-
-    # - name: Pastikan k3s-agent service berjalan
-    #   systemd:
-    #     name: k3s-agent
-    #     state: started
-    #     enabled: yes
 
     - name: Verifikasi node sudah join ke master
       shell: |
