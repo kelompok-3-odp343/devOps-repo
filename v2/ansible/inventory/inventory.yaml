@@ -1,0 +1,30 @@
+all:
+  children:
+    master:
+      hosts:
+        wandoor-master:
+          ansible_host: 10.148.0.13  # ⬅️ GANTI dengan IP master VM lo (wandoor-master)
+
+    workers:
+      hosts:
+        wandoor-worker-1:
+          ansible_host: 10.148.0.12  # ⬅️ GANTI dengan IP worker FE lo
+          app_type: frontend
+
+        wandoor-worker-2:
+          ansible_host: 10.148.0.15  # ⬅️ GANTI dengan IP worker BE lo
+          app_type: backend
+
+    database:
+      hosts:
+        wandoor-db:
+          ansible_host: 10.148.0.14  # ⬅️ GANTI dengan IP database VM lo
+
+    monitoring:
+      hosts:
+        wandoor-monitoring:
+          ansible_host: 10.148.0.11  # ⬅️ GANTI dengan IP monitoring VM lo
+
+  vars:
+    ansible_user: adamalhafizh23  # ⬅️ GANTI dengan username SSH lo
+    ansible_python_interpreter: /usr/bin/python3

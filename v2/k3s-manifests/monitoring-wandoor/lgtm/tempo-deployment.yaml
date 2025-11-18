@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+    spec:
+      containers:
+        - name: tempo
+          image: grafana/tempo:2.4.1
+          args: ["-config.file=/etc/tempo/tempo.yml"]
+          ports:
+            - containerPort: 3200
+            - containerPort: 4317
+            - containerPort: 4318
+          volumeMounts:
+            - name: tempo-config
+              mountPath: /etc/tempo/tempo.yml
+              subPath: tempo.yml
+      volumes:
+        - name: tempo-config
+          configMap:
+            name: tempo-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app: tempo
+  ports:
+    - port: 3200
+      targetPort: 3200
+    - port: 4317
+      targetPort: 4317
+    - port: 4318
+      targetPort: 4318
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: monitoring
+data:
+  tempo.yml: |
+    server:
+      http_listen_port: 3200
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+    ingester:
+      trace_idle_period: 10s
+      max_block_bytes: 1000000
+      max_block_duration: 5m
+    compactor:
+      compaction:
+        block_retention: 48h
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /tmp/tempo/traces
+    querier:
+      frontend_worker:
+        frontend_address: 127.0.0.1:9095
+    query_frontend:
+      search: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tempo-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: tempo.wandoor.my.id
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tempo
+                port:
+                  number: 3200

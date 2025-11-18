@@ -1,0 +1,115 @@
+---
+- name: 📊 Setup Monitoring Stack (LGTM)
+  hosts: monitoring
+  become: yes
+
+  vars:
+    monitoring_dir: /home/monitoring
+    repo_dir: /home/infra
+    repo_url: "https://github.com/kelompok-3-odp343/infra.git"
+
+  tasks:
+    # ==========================
+    # 1️⃣ Install Git
+    # ==========================
+    - name: Install git
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+
+    # ==========================
+    # 2️⃣ Clone atau Pull Repo Infra
+    # ==========================
+    - name: Check if repo already exists
+      stat:
+        path: "{{ repo_dir }}/.git"
+      register: repo_git
+
+    - name: Clone infra repository (first time)
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dir }}"
+        version: main
+        force: yes
+      when: not repo_git.stat.exists
+
+    - name: Pull latest changes (if repo already exists)
+      shell: git pull origin main
+      args:
+        chdir: "{{ repo_dir }}"
+      when: repo_git.stat.exists
+
+    # ==========================
+    # 3️⃣ Update sistem & install dependency dasar
+    # ==========================
+    - name: Update apt dan install dependency
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    # ==========================
+    # 4️⃣ Install Docker
+    # ==========================
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    - name: Add Docker repository for Debian bookworm
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable"
+        state: present
+
+    - name: Install Docker engine
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    # ==========================
+    # 5️⃣ Install Docker Compose
+    # ==========================
+    - name: Cek apakah docker-compose sudah terpasang
+      command: docker-compose --version
+      register: compose_check
+      ignore_errors: yes
+
+    - name: Install docker-compose jika belum ada
+      shell: |
+        curl -L "https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      when: compose_check.rc != 0
+
+    # ==========================
+    # 6️⃣ Buat folder monitoring
+    # ==========================
+    - name: Create monitoring directory
+      file:
+        path: "{{ monitoring_dir }}"
+        state: directory
+        mode: "0755"
+
+    # ==========================
+    # 7️⃣ Copy docker-compose.yml
+    # ==========================
+    - name: Copy docker-compose.yml from infra repo
+      copy:
+        src: "{{ repo_dir }}/monitoring-wandoor/docker-compose.yml"
+        dest: "{{ monitoring_dir }}/docker-compose.yml"
+        remote_src: yes
+        mode: "0644"

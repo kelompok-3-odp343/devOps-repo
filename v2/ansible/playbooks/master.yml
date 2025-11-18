@@ -1,0 +1,128 @@
+---
+- name: Setup K3s Master and ArgoCD
+  hosts: master
+  become: yes
+  vars:
+    k3s_install_script: https://get.k3s.io
+    argocd_namespace: argocd
+    argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    repo_url: https://github.com/kelompok-3-odp343/infra.git
+    repo_dir: /home/infra
+
+  tasks:
+    # ==========================
+    # 1️⃣ Install basic dependencies
+    # ==========================
+    - name: Install basic dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+        state: present
+        update_cache: yes
+
+    # ==========================
+    # 2️⃣ Install K3s Master
+    # ==========================
+    - name: Install K3s master node
+      shell: |
+        sudo curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --flannel-backend=vxlan
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Ensure K3s service is enabled and running
+      systemd:
+        name: k3s
+        enabled: yes
+        state: started
+
+    # ==========================
+    # 3️⃣ Wait for K3s Ready
+    # ==========================
+    - name: Wait for K3s to be ready
+      shell: sudo kubectl get nodes
+      register: k3s_nodes
+      until: '"Ready" in k3s_nodes.stdout'
+      retries: 10
+      delay: 10
+
+    # ==========================
+    # 4️⃣ Install ArgoCD
+    # ==========================
+    - name: Create namespace for ArgoCD
+      shell: sudo kubectl create namespace {{ argocd_namespace }} || true
+
+    - name: Deploy ArgoCD manifests
+      shell: sudo kubectl apply -n {{ argocd_namespace }} -f {{ argocd_manifest_url }}
+
+    # ==========================
+    # 5️⃣ Wait for ArgoCD Pods Running
+    # ==========================
+    - name: Wait for ArgoCD pods to be ready
+      shell: sudo kubectl get pods -n {{ argocd_namespace }} --no-headers
+      register: argocd_pods
+      until: "'Running' in argocd_pods.stdout"
+      retries: 20
+      delay: 15
+
+    # ==========================
+    # 6️⃣ Show ArgoCD Admin Password
+    # ==========================
+    - name: Get ArgoCD admin password
+      shell: sudo kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
+      register: argocd_password
+
+    - name: Show ArgoCD admin password
+      debug:
+        msg: "🔐 ArgoCD admin password: {{ argocd_password.stdout }}"
+
+    # ==========================
+    # 7️⃣ Patch ArgoCD Service -> NodePort
+    # ==========================
+    - name: Patch ArgoCD server service to NodePort
+      shell: |
+        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort", "ports":[{"port": 443,"targetPort": 443,"nodePort": 31453}]}}'
+
+    # ==========================
+    # 8️⃣ Clone or Update Infra Repository
+    # ==========================
+    - name: Allow repo directory as safe
+      ansible.builtin.command: sudo git config --global --add safe.directory /home/infra
+
+    - name: Check if repo already exists
+      stat:
+        path: "{{ repo_dir }}/.git"
+      register: repo_git
+
+    - name: Clone infra repository (first time)
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dir }}"
+        version: main
+        force: yes
+      when: not repo_git.stat.exists
+
+    - name: Pull latest changes (if repo already exists)
+      shell: sudo git pull origin main
+      args:
+        chdir: "{{ repo_dir }}"
+      when: repo_git.stat.exists
+
+    # ==========================
+    # 9️⃣ Apply Backend & Frontend k3s Manifests
+    # ==========================
+    - name: Apply namespace manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/namespace.yaml
+
+    - name: Apply backend manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/backend-wandoor/
+
+    - name: Apply frontend manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/frontend-wandoor/
+
+    # ==========================
+    # 🔟 Apply ArgoCD Application Manifests (frontend, backend, database, monitoring)
+    # ==========================
+    - name: Apply ArgoCD application manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/argoCD/

@@ -1,0 +1,1 @@
+{"db":{"private_ip":"10.148.0.14","public_ip":"136.110.37.125"},"master":{"private_ip":"10.148.0.13","public_ip":"34.142.142.91"},"worker1":{"private_ip":"10.148.0.12","public_ip":""},"worker2":{"private_ip":"10.148.0.15","public_ip":""}}
