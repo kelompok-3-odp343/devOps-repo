@@ -38,6 +38,8 @@ metadata:
   name: prometheus
   namespace: monitoring
 spec:
+  nodeSelector:
+    kubernetes.io/hostname: wandoor-worker-1
   serviceName: prometheus
   replicas: 1
   selector:
