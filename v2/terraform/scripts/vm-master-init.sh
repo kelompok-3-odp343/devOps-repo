@@ -4,6 +4,7 @@ set -e
 echo "===== [1] Update system ====="
 apt update -y
 apt upgrade -y
+sudo apt install htop -y
 
 echo "===== [2] Install dependencies ====="
 apt install -y python3 python3-pip python3-venv git openssh-client google-cloud-cli
