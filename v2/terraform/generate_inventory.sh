@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-OUTPUT_FILE="/home/infra/ansible/inventory/inventory.ini"
+OUTPUT_FILE="/home/infra/v2/ansible/inventory/inventory.ini"
 
 echo "===== Generate Ansible Inventory From GCP Instances ====="
 
