@@ -85,22 +85,22 @@ data:
     query_frontend:
       search: {}
 
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: tempo-ingress
-  annotations:
-    kubernetes.io/ingress.class: nginx
-spec:
-  rules:
-    - host: tempo.wandoor.my.id
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: tempo
-                port:
-                  number: 3200
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: tempo-ingress
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+# spec:
+#   rules:
+#     - host: tempo.wandoor.my.id
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: tempo
+#                 port:
+#                   number: 3200

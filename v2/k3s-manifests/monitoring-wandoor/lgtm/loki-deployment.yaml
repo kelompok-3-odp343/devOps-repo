@@ -90,22 +90,22 @@ data:
       ingestion_rate_mb: 10
       ingestion_burst_size_mb: 20
 
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: loki-ingress
-  annotations:
-    kubernetes.io/ingress.class: nginx
-spec:
-  rules:
-    - host: loki.wandoor.my.id
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: loki
-                port:
-                  number: 3100
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: loki-ingress
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+# spec:
+#   rules:
+#     - host: loki.wandoor.my.id
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: loki
+#                 port:
+#                   number: 3100

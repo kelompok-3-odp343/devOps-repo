@@ -54,22 +54,22 @@ spec:
   ports:
     - port: 9090
       targetPort: 9090
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: prometheus-ingress
-  annotations:
-    kubernetes.io/ingress.class: nginx
-spec:
-  rules:
-    - host: prometheus.wandoor.my.id
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: prometheus
-                port:
-                  number: 9090
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: prometheus-ingress
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+# spec:
+#   rules:
+#     - host: prometheus.wandoor.my.id
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: prometheus
+#                 port:
+#                   number: 9090
