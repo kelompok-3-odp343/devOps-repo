@@ -1,38 +1,10 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: oracle-data-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: oracle-config
-data:
-  ORACLE_DATABASE: "wandoor_db"
-  APP_USER: "wandoor"
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: oracle-secret
-type: Opaque
-stringData:
-  ORACLE_PASSWORD: "root"
-  APP_USER_PASSWORD: "root"
----
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: oracle-db
-  labels:
-    app: oracle-db
+  namespace: wandoor
 spec:
+  serviceName: oracle-db
   replicas: 1
   selector:
     matchLabels:
@@ -47,104 +19,48 @@ spec:
           image: gvenzl/oracle-free:23-slim
           ports:
             - containerPort: 1521
-              name: oracle
             - containerPort: 5500
-              name: oracle-em
           env:
             - name: ORACLE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: oracle-secret
-                  key: ORACLE_PASSWORD
+              value: "root"
             - name: ORACLE_DATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: oracle-config
-                  key: ORACLE_DATABASE
+              value: "wandoor_db"
             - name: APP_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: oracle-config
-                  key: APP_USER
+              value: "wandoor"
             - name: APP_USER_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: oracle-secret
-                  key: APP_USER_PASSWORD
+              value: "root"
           volumeMounts:
             - name: oracle-data
               mountPath: /opt/oracle/oradata
-          livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - echo 'SELECT 1 FROM dual;' | sqlplus -s system/root@XEPDB1
-            initialDelaySeconds: 30
-            periodSeconds: 30
-            timeoutSeconds: 10
-            failureThreshold: 10
           readinessProbe:
             exec:
               command:
-                - /bin/sh
-                - -c
-                - echo 'SELECT 1 FROM dual;' | sqlplus -s system/root@XEPDB1
-            initialDelaySeconds: 30
+                [
+                  "/bin/sh",
+                  "-c",
+                  "echo 'SELECT 1 FROM dual;' | sqlplus -s system/root@XEPDB1",
+                ]
+            initialDelaySeconds: 60
             periodSeconds: 30
-            timeoutSeconds: 10
-            failureThreshold: 10
-          resources:
-            requests:
-              memory: "2Gi"
-              cpu: "1000m"
-            limits:
-              memory: "4Gi"
-              cpu: "2000m"
       volumes:
         - name: oracle-data
           persistentVolumeClaim:
             claimName: oracle-data-pvc
-      restartPolicy: Always
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: oracle-db
-  labels:
-    app: oracle-db
+  namespace: wandoor
 spec:
   type: ClusterIP
-  ports:
-    - port: 1521
-      targetPort: 1521
-      protocol: TCP
-      name: oracle
-    - port: 5500
-      targetPort: 5500
-      protocol: TCP
-      name: oracle-em
   selector:
     app: oracle-db
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: oracle-db-nodeport
-  labels:
-    app: oracle-db
-spec:
-  type: NodePort
   ports:
-    - port: 1521
+    - name: oracle
+      port: 1521
       targetPort: 1521
-      nodePort: 31521
-      protocol: TCP
-      name: oracle
-    - port: 5500
+    - name: oracle-em
+      port: 5500
       targetPort: 5500
-      nodePort: 30500
-      protocol: TCP
-      name: oracle-em
-  selector:
-    app: oracle-db
