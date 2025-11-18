@@ -14,6 +14,8 @@ spec:
       labels:
         app: oracle-db
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: wandoor-db
       containers:
         - name: oracle-db
           image: gvenzl/oracle-free:23-slim
