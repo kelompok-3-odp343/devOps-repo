@@ -144,7 +144,7 @@ resource "google_compute_address" "db_ip" {
 # ==================== #
 resource "google_compute_instance" "wandoor-master" {
   name         = "wandoor-master"
-  machine_type = "e2-medium" #e2-standart-2
+  machine_type = "e2-standard-4" #e2-standart-2
   zone         = var.zone
   tags         = ["wandoor-master"]
 
