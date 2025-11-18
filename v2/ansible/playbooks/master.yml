@@ -153,7 +153,10 @@
       shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/namespace.yaml
 
     - name: Apply LGTM
-      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/tempo-deployment.yaml
+
+    # - name: Apply LGTM
+    #   shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/
 
     # ==========================
     # 🔟 Apply ArgoCD Application Manifests (frontend, backend, database, monitoring)
