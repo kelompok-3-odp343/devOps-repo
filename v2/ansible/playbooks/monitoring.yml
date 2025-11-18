@@ -54,48 +54,6 @@
         update_cache: yes
 
     # ==========================
-    # 4️⃣ Install Docker
-    # ==========================
-    - name: Add Docker GPG key
-      apt_key:
-        url: https://download.docker.com/linux/debian/gpg
-        state: present
-
-    - name: Add Docker repository for Debian bookworm
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable"
-        state: present
-
-    - name: Install Docker engine
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-        state: present
-        update_cache: yes
-
-    - name: Ensure Docker service is running
-      systemd:
-        name: docker
-        enabled: yes
-        state: started
-
-    # ==========================
-    # 5️⃣ Install Docker Compose
-    # ==========================
-    - name: Cek apakah docker-compose sudah terpasang
-      command: docker-compose --version
-      register: compose_check
-      ignore_errors: yes
-
-    - name: Install docker-compose jika belum ada
-      shell: |
-        curl -L "https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-      when: compose_check.rc != 0
-
-    # ==========================
     # 6️⃣ Buat folder monitoring
     # ==========================
     - name: Create monitoring directory
@@ -105,11 +63,63 @@
         mode: "0755"
 
     # ==========================
+    # 9️⃣ Apply Backend, Frontend, & LGTM k3s Manifests
+    # ==========================
+    - name: Apply LGTM
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/grafana-deployment.yaml
+    - name: Apply LGTM
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/loki-deployment.yaml
+    - name: Apply LGTM
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/prometheus-deployment.yaml
+
+    # ==========================
+    # 4️⃣ Install Docker
+    # ==========================
+    # - name: Add Docker GPG key
+    #   apt_key:
+    #     url: https://download.docker.com/linux/debian/gpg
+    #     state: present
+
+    # - name: Add Docker repository for Debian bookworm
+    #   apt_repository:
+    #     repo: "deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable"
+    #     state: present
+
+    # - name: Install Docker engine
+    #   apt:
+    #     name:
+    #       - docker-ce
+    #       - docker-ce-cli
+    #       - containerd.io
+    #     state: present
+    #     update_cache: yes
+
+    # - name: Ensure Docker service is running
+    #   systemd:
+    #     name: docker
+    #     enabled: yes
+    #     state: started
+
+    # ==========================
+    # 5️⃣ Install Docker Compose
+    # ==========================
+    # - name: Cek apakah docker-compose sudah terpasang
+    #   command: docker-compose --version
+    #   register: compose_check
+    #   ignore_errors: yes
+
+    # - name: Install docker-compose jika belum ada
+    #   shell: |
+    #     curl -L "https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    #     chmod +x /usr/local/bin/docker-compose
+    #   when: compose_check.rc != 0
+
+    # ==========================
     # 7️⃣ Copy docker-compose.yml
     # ==========================
-    - name: Copy docker-compose.yml from infra repo
-      copy:
-        src: "{{ repo_dir }}/monitoring-wandoor/docker-compose.yml"
-        dest: "{{ monitoring_dir }}/docker-compose.yml"
-        remote_src: yes
-        mode: "0644"
+    # - name: Copy docker-compose.yml from infra repo
+    #   copy:
+    #     src: "{{ repo_dir }}/monitoring-wandoor/docker-compose.yml"
+    #     dest: "{{ monitoring_dir }}/docker-compose.yml"
+    #     remote_src: yes
+    #     mode: "0644"

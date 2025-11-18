@@ -22,6 +22,14 @@ spec:
           volumeMounts:
             - name: grafana-data
               mountPath: /var/lib/grafana
+            - name: grafana-config
+              mountPath: /etc/grafana/grafana.ini
+              subPath: grafana.ini
+      volumes:
+        - name: grafana-config
+          hostPath:
+            path: /opt/lgtm/grafana/grafana.ini
+            type: File
   volumeClaimTemplates:
     - metadata:
         name: grafana-data
@@ -29,7 +37,8 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 2Gi
+            storage: 5Gi
+
 ---
 apiVersion: v1
 kind: Service
