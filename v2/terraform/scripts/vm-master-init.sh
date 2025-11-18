@@ -46,7 +46,7 @@ mkdir -p /home
 sudo git clone https://github.com/kelompok-3-odp343/infra.git /home/infra
 chown -R adamalhafizh23:adamalhafizh23 /home/infra
 sudo chmod +x /home/infra/v2/terraform/generate_inventory.sh
-/home/infra/terraform/generate_inventory.sh
+/home/infra/v2/terraform/generate_inventory.sh
 
 
 echo "===== SSH key added for ALL instances in project ====="
