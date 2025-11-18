@@ -6,6 +6,13 @@
   vars:
     repo_url: "https://github.com/kelompok-3-odp343/infra.git"
     repo_dir: "/home/infra"
+    master_ip: "{{ hostvars['master'].ansible_host }}"
+    k3s_token_path: "/var/lib/rancher/k3s/server/node-token"
+    k3s_url: "https://{{ master_ip }}:6443"
+    ssh_user: "your-ssh-user" # ganti sesuai user SSH ke master
+    ssh_private_key: "/home/{{ ansible_user }}/.ssh/id_rsa" # path key privat jika pakai key
+    local_socks_port: 1080
+    local_forward_port: 3128
 
   tasks:
     # ==========================
