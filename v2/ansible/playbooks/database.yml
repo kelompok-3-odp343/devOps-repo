@@ -106,11 +106,11 @@
       args:
         creates: /usr/local/bin/k3s
 
-    - name: Pastikan k3s-agent service berjalan
-      systemd:
-        name: k3s-agent
-        state: started
-        enabled: yes
+    # - name: Pastikan k3s-agent service berjalan
+    #   systemd:
+    #     name: k3s-agent
+    #     state: started
+    #     enabled: yes
 
     - name: Verifikasi node sudah join ke master
       shell: |
