@@ -66,15 +66,15 @@
 
     # ==========================
     # 5️⃣ Verifikasi koneksi ke master
-    # ==========================
-- name: Pastikan k3s-agent di worker join dengan master
-  hosts: workers
-  become: yes
-  vars:
-    k3s_master_url: "https://{{ hostvars['master']['ansible_host'] }}:6443"
-    k3s_token: "{{ hostvars['master']['k3s_node_token'] }}"
+    #     # ==========================
+    # - name: Pastikan k3s-agent di worker join dengan master
+    #   hosts: workers
+    #   become: yes
+    #   vars:
+    #     k3s_master_url: "https://{{ hostvars['master']['ansible_host'] }}:6443"
+    #     k3s_token: "{{ hostvars['master']['k3s_node_token'] }}"
 
-  tasks:
+    #   tasks:
     - name: Cek apakah k3s-agent service ada
       stat:
         path: /etc/systemd/system/k3s-agent.service
