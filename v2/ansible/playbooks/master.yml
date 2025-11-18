@@ -122,7 +122,7 @@
       shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/frontend-wandoor/
 
     - name: Apply LGTM namespace
-      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/tempo-deployment.yaml
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/namespace.yaml
 
     - name: Apply tempo
       shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/tempo-deployment.yaml
