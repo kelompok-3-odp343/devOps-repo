@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wandoor-frontend
+  namespace: wandoor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wandoor-frontend
+  template:
+    metadata:
+      labels:
+        app: wandoor-frontend
+    spec:
+      containers:
+        - name: wandoor-frontend
+          image: jrtr1/wandoor-frontend-app:frontend-bf26a257302ba1b42a29f61c1114352f341e55bb
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: wandoor
+spec:
+  selector:
+    app: wandoor-frontend
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30081
