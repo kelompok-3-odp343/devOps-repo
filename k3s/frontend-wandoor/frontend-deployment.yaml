@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: wandoor-frontend
-          image: jrtr1/wandoor-frontend-app:frontend-927d8c1ab161d813e5a11e026b7ef3a172bfbba9
+          image: jrtr1/wandoor-frontend-app:frontend-05825f426acb681c29045e38c5e7400e419c5bd2
           ports:
             - containerPort: 80
               protocol: TCP
