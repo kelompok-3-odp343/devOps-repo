@@ -144,7 +144,7 @@
       shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/monitoring-namespace.yaml
 
     - name: Apply namespace manifests
-      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/
 
     - name: Apply namespace manifests
       shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/frontend-wandoor/
