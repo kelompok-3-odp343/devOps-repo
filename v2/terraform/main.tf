@@ -144,7 +144,7 @@ resource "google_compute_address" "db_ip" {
 # ==================== #
 resource "google_compute_instance" "wandoor-master" {
   name         = "wandoor-master"
-  machine_type = "e2-standard-4" #e2-standart-2
+  machine_type = "e2-standard-4" 
   zone         = var.zone
   tags         = ["wandoor-master"]
 
@@ -158,7 +158,7 @@ resource "google_compute_instance" "wandoor-master" {
 
   network_interface {
     network = "default"
-    access_config {nat_ip = google_compute_address.master_ip.address} # ✅ master tetap punya external IP
+    access_config {nat_ip = google_compute_address.master_ip.address} 
   }
 
   metadata_startup_script = file("${path.module}/scripts/vm-master-init.sh")
@@ -193,8 +193,6 @@ resource "google_compute_instance" "wandoor-db" {
     access_config {nat_ip = google_compute_address.db_ip.address}
   }
 
-  # metadata_startup_script = file("${path.module}/scripts/database-vm-init.sh")
-
   service_account {
     scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -224,8 +222,6 @@ resource "google_compute_instance" "wandoor-worker-1" {
     network = "default"
     access_config {}
   }
-
-  # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
 
   service_account {
     scopes = [
@@ -261,8 +257,6 @@ resource "google_compute_instance" "wandoor-worker-2" {
     master_ip = google_compute_instance.wandoor-master.network_interface[0].network_ip
   }
 
-  # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
-
   service_account {
     scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -272,35 +266,3 @@ resource "google_compute_instance" "wandoor-worker-2" {
 
   depends_on = [google_compute_instance.wandoor-master]
 }
-
-# ==================== #
-# VM5: MONITORING (LGTM)
-# ==================== #
-# resource "google_compute_instance" "wandoor-monitoring" {
-#   name         = "wandoor-monitoring"
-#   machine_type = "e2-medium"
-#   zone         = var.zone
-#   tags         = ["wandoor-monitoring"]
-
-#   boot_disk {
-#     initialize_params {
-#       image = "debian-cloud/debian-12"
-#       size  = 20
-#       type  = "pd-standard"
-#     }
-#   }
-
-#   network_interface {
-#     network = "default"
-#     access_config {} # Monitoring tetap punya external IP
-#   }
-
-#   # metadata_startup_script = file("${path.module}/scripts/init-common.sh")
-
-#   service_account {
-#     scopes = [
-#       "https://www.googleapis.com/auth/cloud-platform",
-#       "https://www.googleapis.com/auth/monitoring.write"
-#     ]
-#   }
-# }
