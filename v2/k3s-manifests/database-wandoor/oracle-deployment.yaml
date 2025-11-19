@@ -53,10 +53,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: oracle-db
+  name: oracle-db-lb
   namespace: wandoor
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: oracle-db
   ports:
