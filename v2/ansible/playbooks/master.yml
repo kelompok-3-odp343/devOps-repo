@@ -138,25 +138,13 @@
     # 9️⃣ Apply Backend, Frontend, & LGTM k3s Manifests
     # ==========================
     - name: Apply namespace manifests
-      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/
-
-    # - name: Apply backend manifests
-    #   shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/backend-wandoor/
-
-    # - name: Apply frontend manifests
-    #   shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/frontend-wandoor/
-
-    # - name: Apply database manifests
-    #   shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/database-wandoor/
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/wandoor-namespace.yaml
 
     - name: Apply LGTM namespace
-      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/namespace.yaml
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/monitoring-namespace.yaml
 
-    - name: Apply LGTM
-      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm
-
-    # - name: Apply LGTM
-    #   shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/monitoring-wandoor/lgtm/
+    - name: Apply namespace manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/v2/k3s-manifests/
 
     # ==========================
     # 🔟 Apply ArgoCD Application Manifests (frontend, backend, database, monitoring)
