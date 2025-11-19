@@ -26,7 +26,7 @@ data:
         pipeline_stages:
           - regex:
               source: filename
-              expression: '(?P<pod>[^_]+)_(?P<namespace>[^_]+)_(?P<container>[^-]+)-(?P<container_id>.*).log'
+              expression: '^(?P<pod>.+)_(?P<namespace>.+)_(?P<container>.+)-(?P<container_id>.+)\.log$'
 
           - labels:
               pod:
@@ -38,7 +38,7 @@ data:
               expressions:
                 level: level
                 trace_id: trace_id
-      
+
           - labels:
               level:
               trace_id:
@@ -122,7 +122,7 @@ metadata:
   namespace: monitoring
 spec:
   type: ExternalName
-  externalName: 10.148.15.213 # <- Ganti dengan IP Loki VM kamu
+  externalName: 10.148.15.213  # <- Ganti dengan IP Loki VM kamu
   ports:
     - port: 80
       targetPort: 3100
