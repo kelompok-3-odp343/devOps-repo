@@ -5,7 +5,7 @@ scrape_configs:
   # Scrape metrics dari OTel Collector
   - job_name: "otel_collector"
     static_configs:
-      - targets: ["otel-collector.monitoring.svc.cluster.local:9464"]
+      - targets: ["10.148.15.215:9464"]
 
   # Scrape metrics dari Node Exporter di setiap VM
   - job_name: "node_exporters"

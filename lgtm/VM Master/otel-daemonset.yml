@@ -12,39 +12,22 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-    processors:
-      batch: {}
 
     exporters:
       otlp:
-        endpoint: tempo.monitoring.svc.cluster.local:4320  # IP VM monitoring (Tempo)
+        endpoint: "10.148.15.213:4320"  # IP VM monitoring (Tempo)
         tls:
           insecure: true
-
-      prometheus:
-        endpoint: 0.0.0.0:9464 # metrics scraping
-
-      loki:
-        endpoint: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push # loki service in monitoring namespace
 
     service:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [batch] 
           exporters: [otlp]
-      metrics:
-        receivers: [otlp]
-        processors: [batch]
-        exporters: [prometheus]
 
-      logs:
-        receivers: [otlp]
-        processors: [batch]
-        exporters: [loki]
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: otel-collector
   namespace: monitoring
@@ -64,7 +47,6 @@ spec:
           ports:
             - containerPort: 4317
             - containerPort: 4318
-            - containerPort: 9464
           volumeMounts:
             - name: config
               mountPath: /etc/otel
@@ -88,6 +70,3 @@ spec:
     - name: http
       port: 4318
       targetPort: 4318
-    - name: metrics
-      port: 9464
-      targetPort: 9464
