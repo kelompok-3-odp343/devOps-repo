@@ -4,9 +4,9 @@ metadata:
   name: wandoor-backend-ingress
   namespace: wandoor
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.priority: "100"
 spec:
-  ingressClassName: traefik
   rules:
     - host: api.wandoor.my.id
       http:
