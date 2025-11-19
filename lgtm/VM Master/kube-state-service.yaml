@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-state-metrics
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: kube-state-metrics
+spec:
+  type: NodePort
+  ports:
+    - name: http-metrics
+      port: 8080
+      targetPort: http-metrics
+      nodePort: 32080 # <--- port eksternal di node
+  selector:
+    app.kubernetes.io/name: kube-state-metrics
