@@ -9,8 +9,8 @@ kind: Deployment
 metadata:
   name: kube-state-metrics
   namespace: kube-system
-labels:
-  app: kube-state-metrics
+  labels:
+    app: kube-state-metrics
 spec:
   replicas: 1
   selector:
