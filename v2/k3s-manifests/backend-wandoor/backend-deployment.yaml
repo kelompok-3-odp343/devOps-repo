@@ -104,6 +104,7 @@ spec:
       # nodePort: 30080
       protocol: TCP
 ---
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: backend-ingress
