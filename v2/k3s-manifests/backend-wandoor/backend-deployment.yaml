@@ -96,7 +96,7 @@ metadata:
 spec:
   selector:
     app: wandoor-backend
-  type: NodePort
+  type: ClusterIP
   ports:
     - name: http
       port: 8081
