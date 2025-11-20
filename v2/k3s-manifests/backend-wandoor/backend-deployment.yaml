@@ -96,10 +96,10 @@ metadata:
 spec:
   selector:
     app: wandoor-backend
-  type: ClusterIP
+  type: NodePort
   ports:
     - name: http
       port: 8081
       targetPort: 8081
-      # nodePort: 30080
+      nodePort: 30080
       protocol: TCP
