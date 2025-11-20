@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik-middleware
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: "https://github.com/kelompok-3-odp343/infra.git"
+    targetRevision: main
+    path: v2/k3s-manifests/middleware # folder khusus middleware
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: wandoor # middleware bisa cluster-scope, namespace bebas
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - Validate=false
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - Replace=true
