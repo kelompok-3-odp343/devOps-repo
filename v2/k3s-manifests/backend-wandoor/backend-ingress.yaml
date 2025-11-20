@@ -25,14 +25,12 @@ metadata:
   name: backend-ingress
   namespace: wandoor
   annotations:
-    # Optional: Add useful Traefik annotations
     traefik.ingress.kubernetes.io/router.entrypoints: web
-    # Optional: Enable CORS if needed
-    # traefik.ingress.kubernetes.io/router.middlewares: wandoor-cors@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: wandoor-cors@kubernetescrd
 spec:
   ingressClassName: traefik # ← TAMBAHKAN INI (modern way, lebih direkomendasikan)
   rules:
-    - host: api.wandoor.my.id
+    - host: wandoor.my.id
       http:
         paths:
           - path: /
