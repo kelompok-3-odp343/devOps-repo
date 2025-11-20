@@ -29,7 +29,7 @@ spec:
 
       containers:
         - name: backend
-          image: jrtr1/wandoor-backend-app:backend-bb0747b8a113c6b10a53b17a697fc786e0894c1e
+          image: jrtr1/wandoor-backend-app:backend-d30e4bc2b2e4f0ab9049dbb54b7a0f76496972d5
           imagePullPolicy: Always
           ports:
             - containerPort: 8081
@@ -103,24 +103,3 @@ spec:
       targetPort: 8081
       # nodePort: 30080
       protocol: TCP
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: backend-ingress
-  namespace: wandoor
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.priority: "120"
-spec:
-  rules:
-    - host: api.wandoor.my.id
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 80
