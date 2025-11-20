@@ -6,16 +6,14 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.priority: "100"
-    traefik.ingress.kubernetes.io/rule-type: PathPrefix
-    traefik.ingress.kubernetes.io/rewrite-target: /$1
+    traefik.ingress.kubernetes.io/router.middlewares: strip-api@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
     - host: api.wandoor.my.id
       http:
         paths:
-          - path: /
+          - path: /api
             pathType: Prefix
             backend:
               service:
