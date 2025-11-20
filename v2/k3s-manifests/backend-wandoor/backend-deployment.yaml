@@ -103,3 +103,23 @@ spec:
       targetPort: 8081
       # nodePort: 30080
       protocol: TCP
+---
+kind: Ingress
+metadata:
+  name: backend-ingress
+  namespace: wandoor
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.priority: "120"
+spec:
+  rules:
+    - host: api.wandoor.my.id
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80
