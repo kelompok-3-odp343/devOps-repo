@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: monitoring
+data:
+  config.yml: |
+    server:
+      http_listen_port: 3200
+      grpc_listen_port: 9096
+
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            http:
+            grpc:
+
+    ingester:
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+      trace_idle_period: 10s
+      max_block_bytes: 1000000
+      max_block_duration: 5m
+
+    compactor:
+      compaction:
+        block_retention: 24h
+
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /tmp/tempo
+        wal:
+          path: /tmp/tempo/wal
+
+    overrides:
+      max_traces_per_user: 0
+      max_global_traces_per_user: 0
