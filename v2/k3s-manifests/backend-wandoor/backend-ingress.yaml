@@ -32,7 +32,7 @@ metadata:
 spec:
   ingressClassName: traefik # ← TAMBAHKAN INI (modern way, lebih direkomendasikan)
   rules:
-    - host: backend.wandoor.my.id
+    - host: api.wandoor.my.id
       http:
         paths:
           - path: /
