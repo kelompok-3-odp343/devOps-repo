@@ -1,14 +1,34 @@
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: wandoor-backend-ingress
+#   namespace: wandoor
+#   annotations:
+#     kubernetes.io/ingress.class: traefik
+#     traefik.ingress.kubernetes.io/router.priority: "100"
+# spec:
+#   rules:
+#     - host: api.wandoor.my.id
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: backend-service
+#                 port:
+#                   number: 8081
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: wandoor-backend-ingress
+  name: backend-ingress
   namespace: wandoor
   annotations:
     kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.priority: "100"
 spec:
   rules:
-    - host: api.wandoor.my.id
+    - host: backend.wandoor.my.id
       http:
         paths:
           - path: /
