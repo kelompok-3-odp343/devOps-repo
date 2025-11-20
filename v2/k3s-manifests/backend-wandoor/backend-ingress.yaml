@@ -1,3 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  namespace: wandoor
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.priority: "120"
+spec:
+  rules:
+    - host: api.wandoor.my.id
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80
 # apiVersion: networking.k8s.io/v1
 # kind: Ingress
 # metadata:
@@ -19,24 +39,24 @@
 #                 port:
 #                   number: 8081
 
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: backend-ingress
-  namespace: wandoor
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
-    traefik.ingress.kubernetes.io/router.middlewares: wandoor-cors@kubernetescrd
-spec:
-  ingressClassName: traefik # ← TAMBAHKAN INI (modern way, lebih direkomendasikan)
-  rules:
-    - host: wandoor.my.id
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 8081
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: backend-ingress
+#   namespace: wandoor
+#   annotations:
+#     traefik.ingress.kubernetes.io/router.entrypoints: web
+#     traefik.ingress.kubernetes.io/router.middlewares: wandoor-cors@kubernetescrd
+# spec:
+#   ingressClassName: traefik # ← TAMBAHKAN INI (modern way, lebih direkomendasikan)
+#   rules:
+#     - host: wandoor.my.id
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: backend-service
+#                 port:
+#                   number: 8081
