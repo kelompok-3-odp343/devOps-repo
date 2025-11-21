@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/kelompok-3-odp343/infra.git
     targetRevision: main
-    path: k3s/backend-wandoor
+    path: k3s-manifests/backend-wandoor
   destination:
     server: https://kubernetes.default.svc
     namespace: wandoor

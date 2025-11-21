@@ -5,91 +5,106 @@
 
   vars:
     repo_url: "https://github.com/kelompok-3-odp343/infra.git"
-    repo_dir: "/opt/infra"
-    compose_dir: "/opt/infra/database-wandoor"
+    repo_dir: "/home/infra"
+    master_ip: "{{ hostvars['master'].ansible_host }}"
+    k3s_token_path: "/var/lib/rancher/k3s/server/node-token"
+    k3s_url: "https://{{ master_ip }}:6443"
+    ssh_user: "your-ssh-user" # ganti sesuai user SSH ke master
+    ssh_private_key: "/home/{{ ansible_user }}/.ssh/id_rsa" # path key privat jika pakai key
+    local_socks_port: 1080
+    local_forward_port: 3128
 
   tasks:
     # ==========================
-    # 1️⃣ Cleanup ALL Docker-related repos & keys
-    # ==========================
-    - name: Remove ALL Docker repo files (including Ubuntu remnants)
-      shell: |
-        rm -f /etc/apt/sources.list.d/docker*.list
-        rm -f /etc/apt/sources.list.d/*docker*.list
-        rm -f /etc/apt/sources.list.d/download_docker*.list
-      ignore_errors: yes
-
-    - name: Remove ALL Docker GPG keys
-      shell: |
-        rm -f /etc/apt/keyrings/docker*
-        rm -f /usr/share/keyrings/docker*
-      ignore_errors: yes
-
-    - name: Clean apt cache after repo removal
-      apt:
-        update_cache: yes
-        cache_valid_time: 0
-      ignore_errors: yes
-
-    # ==========================
-    # 2️⃣ Install base dependencies
+    # 1️⃣ Pastikan dependency dasar terinstall via proxy
     # ==========================
     - name: Install basic dependencies
       apt:
         name:
-          - ca-certificates
           - curl
+          - wget
           - git
-          - gnupg
-          - lsb-release
         state: present
         update_cache: yes
 
     # ==========================
-    # 3️⃣ Setup Docker official GPG & repo for DEBIAN
+    # 2️⃣ Ambil token dari master node
     # ==========================
-    - name: Ensure /etc/apt/keyrings exists
-      file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: "0755"
+    - name: Fetch K3s join token from master
+      delegate_to: master
+      become: yes
+      slurp:
+        src: "{{ k3s_token_path }}"
+      register: master_token_raw
 
-    - name: Download Docker official GPG key for Debian
+    - name: Decode token dari master
+      set_fact:
+        k3s_token: "{{ master_token_raw.content | b64decode | trim }}"
+
+    # ==========================
+    # 3️⃣ Join worker ke cluster master
+    # ==========================
+    - name: Cek apakah k3s-agent service ada
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service
+
+    - name: Hentikan dan hapus k3s-agent jika service ada
+      when: k3s_agent_service.stat.exists
+      block:
+        - name: Stop k3s-agent service
+          systemd:
+            name: k3s-agent
+            state: stopped
+            enabled: no
+
+        - name: Remove k3s-agent binary dan service file
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /usr/local/bin/k3s-agent
+            - /etc/systemd/system/k3s-agent.service
+
+        - name: Reload systemd daemon
+          command: systemctl daemon-reload
+
+    - name: Install/join k3s-agent ke master
       shell: |
-        curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-        chmod a+r /etc/apt/keyrings/docker.gpg
+        curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -
       args:
-        creates: /etc/apt/keyrings/docker.gpg
-
-    - name: Add Docker apt repository for Debian 12 Bookworm
-      copy:
-        dest: /etc/apt/sources.list.d/docker.list
-        content: |
-          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable
-        mode: "0644"
-
-    - name: Update apt cache after adding Docker repo
-      apt:
-        update_cache: yes
+        creates: /etc/systemd/system/k3s-agent.service
 
     # ==========================
-    # 4️⃣ Install Docker Engine & Compose Plugin
+    # 4️⃣ Pastikan service aktif
     # ==========================
-    - name: Install Docker engine
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-        state: present
-
-    - name: Ensure Docker is running
+    - name: Enable and start k3s-agent service
       systemd:
-        name: docker
+        name: k3s-agent
         enabled: yes
         state: started
+
+    # ==========================
+    # 5️⃣ Verifikasi koneksi ke master
+    #     # ==========================
+    # - name: Pastikan k3s-agent di worker join dengan master
+    #   hosts: workers
+    #   become: yes
+    #   vars:
+    #     k3s_master_url: "https://{{ hostvars['master']['ansible_host'] }}:6443"
+    #     k3s_token: "{{ hostvars['master']['k3s_node_token'] }}"
+
+    #   tasks:
+
+    - name: Verifikasi node sudah join ke master
+      shell: |
+        kubectl get nodes
+      delegate_to: master
+      register: nodes_status
+
+    - name: Tampilkan hasil verifikasi
+      debug:
+        var: nodes_status.stdout
 
     # ==========================
     # 5️⃣ Clone or update infra repo
@@ -113,24 +128,3 @@
         chdir: "{{ repo_dir }}"
       when: repo_git.stat.exists
       ignore_errors: yes
-
-    # ==========================
-    # 6️⃣ Run docker compose
-    # ==========================
-    - name: Run docker compose up -d
-      shell: docker compose up -d
-      args:
-        chdir: "{{ compose_dir }}"
-
-    # ==========================
-    # 7️⃣ Show running containers
-    # ==========================
-    - name: Check running containers
-      shell: docker ps
-      register: container_status
-
-    - debug:
-        msg: |
-          🚀 Docker Compose Deploy Completed!
-          === Container Status ===
-          {{ container_status.stdout }}
