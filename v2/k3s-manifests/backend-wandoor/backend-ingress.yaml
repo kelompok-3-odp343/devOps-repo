@@ -5,15 +5,12 @@ metadata:
   namespace: wandoor
   annotations:
     kubernetes.io/ingress.class: traefik
-    traefik.ingress.kubernetes.io/router.entrypoints: web
-    # traefik.ingress.kubernetes.io/router.middlewares: strip-api@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
-    - host: api.wandoor.my.id
-      http:
+    - http:
         paths:
-          - path: /?(.*)
+          - path: /
             pathType: Prefix
             backend:
               service:
