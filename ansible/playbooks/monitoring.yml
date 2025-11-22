@@ -7,33 +7,74 @@
     repo_url: "https://github.com/kelompok-3-odp343/infra.git"
     repo_dir: "/home/infra"
     compose_dir: "/home/infra/monitoring-wandoor/vm-monitoring/docker-compose"
+    master_ip: "{{ hostvars['master'].ansible_host }}"
+    k3s_token_path: "/var/lib/rancher/k3s/server/node-token"
+    k3s_url: "https://{{ master_ip }}:6443"
+    ssh_user: "your-ssh-user"
+    ssh_private_key: "/home/{{ ansible_user }}/.ssh/id_rsa"
+    local_socks_port: 1080
+    local_forward_port: 3128
 
   tasks:
-    # # ==========================
-    # # 1️⃣ Cleanup ALL Docker-related repos & keys
-    # # ==========================
-    # - name: Remove ALL Docker repo files (including Ubuntu remnants)
-    #   shell: |
-    #     rm -f /etc/apt/sources.list.d/docker*.list
-    #     rm -f /etc/apt/sources.list.d/*docker*.list
-    #     rm -f /etc/apt/sources.list.d/download_docker*.list
-    #   ignore_errors: yes
+    - name: Fetch K3s join token from master
+      delegate_to: master
+      become: yes
+      slurp:
+        src: "{{ k3s_token_path }}"
+      register: master_token_raw
 
-    # - name: Remove ALL Docker GPG keys
-    #   shell: |
-    #     rm -f /etc/apt/keyrings/docker*
-    #     rm -f /usr/share/keyrings/docker*
-    #   ignore_errors: yes
+    - name: Decode token dari master
+      set_fact:
+        k3s_token: "{{ master_token_raw.content | b64decode | trim }}"
 
-    # - name: Clean apt cache after repo removal
-    #   apt:
-    #     update_cache: yes
-    #     cache_valid_time: 0
-    #   ignore_errors: yes
+    - name: Cek apakah k3s-agent service ada
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service
 
-    # ==========================
-    # 2️⃣ Install base dependencies
-    # ==========================
+    - name: Hentikan dan hapus k3s-agent jika service ada
+      when: k3s_agent_service.stat.exists
+      block:
+        - name: Stop k3s-agent service
+          systemd:
+            name: k3s-agent
+            state: stopped
+            enabled: no
+
+        - name: Remove k3s-agent binary dan service file
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /usr/local/bin/k3s-agent
+            - /etc/systemd/system/k3s-agent.service
+
+        - name: Reload systemd daemon
+          command: systemctl daemon-reload
+
+    - name: Install/join k3s-agent ke master
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -
+      args:
+        creates: /etc/systemd/system/k3s-agent.service
+
+    - name: Enable and start k3s-agent service
+      systemd:
+        name: k3s-agent
+        enabled: yes
+        state: started
+
+    - name: Verifikasi koneksi worker ke master
+      shell: |
+        kubectl get nodes
+      delegate_to: master
+      register: nodes_status
+      ignore_errors: yes
+
+    - name: Tampilkan hasil verifikasi
+      debug:
+        var: nodes_status.stdout
+
     - name: Install basic dependencies
       apt:
         name:
@@ -45,9 +86,6 @@
         state: present
         update_cache: yes
 
-    # ==========================
-    # 3️⃣ Setup Docker official GPG & repo for DEBIAN
-    # ==========================
     - name: Ensure /etc/apt/keyrings exists
       file:
         path: /etc/apt/keyrings
@@ -72,9 +110,6 @@
       apt:
         update_cache: yes
 
-    # ==========================
-    # 4️⃣ Install Docker Engine & Compose Plugin
-    # ==========================
     - name: Install Docker engine
       apt:
         name:
@@ -91,9 +126,6 @@
         enabled: yes
         state: started
 
-    # ==========================
-    # 5️⃣ Clone or update infra repo
-    # ==========================
     - name: Check if infra repo exists
       stat:
         path: "{{ repo_dir }}/.git"
@@ -114,17 +146,11 @@
       when: repo_git.stat.exists
       ignore_errors: yes
 
-    # ==========================
-    # 6️⃣ Run docker compose
-    # ==========================
     - name: Run docker compose up -d
       shell: docker compose up -d
       args:
         chdir: "{{ compose_dir }}"
 
-    # ==========================
-    # 7️⃣ Show running containers
-    # ==========================
     - name: Check running containers
       shell: docker ps
       register: container_status

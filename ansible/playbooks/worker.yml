@@ -12,9 +12,6 @@
     local_forward_port: 3128
 
   tasks:
-    # ==========================
-    # 1️⃣ Pastikan dependency dasar terinstall via proxy
-    # ==========================
     - name: Install basic dependencies
       apt:
         name:
@@ -23,14 +20,7 @@
           - git
         state: present
         update_cache: yes
-      # environment:
-      #   DEBIAN_FRONTEND: noninteractive
-      #   http_proxy: "http://127.0.0.1:{{ local_forward_port }}"
-      #   https_proxy: "http://127.0.0.1:{{ local_forward_port }}"
 
-    # ==========================
-    # 2️⃣ Ambil token dari master node
-    # ==========================
     - name: Fetch K3s join token from master
       delegate_to: master
       become: yes
@@ -42,9 +32,6 @@
       set_fact:
         k3s_token: "{{ master_token_raw.content | b64decode | trim }}"
 
-    # ==========================
-    # 3️⃣ Join worker ke cluster master
-    # ==========================
     - name: Cek apakah k3s-agent service ada
       stat:
         path: /etc/systemd/system/k3s-agent.service
@@ -76,18 +63,12 @@
       args:
         creates: /etc/systemd/system/k3s-agent.service
 
-    # ==========================
-    # 4️⃣ Pastikan service aktif
-    # ==========================
     - name: Enable and start k3s-agent service
       systemd:
         name: k3s-agent
         enabled: yes
         state: started
 
-    # ==========================
-    # 5️⃣ Verifikasi koneksi ke master
-    # ==========================
     - name: Verifikasi koneksi worker ke master
       shell: |
         kubectl get nodes
