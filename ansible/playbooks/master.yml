@@ -26,12 +26,12 @@
     # ==========================
     # 2️⃣ Install / Reinstall K3s (disable Traefik)
     # ==========================
-    - name: Cek apakah k3s service ada
+    - name: Checking k3s service
       stat:
         path: /etc/systemd/system/k3s.service
       register: k3s_service
 
-    - name: Hentikan dan hapus k3s jika service ada
+    - name: Stop k3s if exist
       when: k3s_service.stat.exists
       block:
         - name: Stop k3s service
@@ -51,7 +51,7 @@
         - name: Reload systemd daemon
           command: systemctl daemon-reload
 
-    - name: Install K3s master node tanpa Traefik
+    - name: Install K3s master without Traefik
       shell: |
         curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --disable=traefik --flannel-backend=vxlan
       args:
@@ -73,14 +73,25 @@
       retries: 10
       delay: 10
 
-    # ==========================
-    # 4️⃣ Install NGINX Ingress Controller
-    # ==========================
     - name: Deploy NGINX Ingress Controller
       shell: kubectl apply -f {{ nginx_ingress_manifest }}
 
-    - name: Wait for NGINX ingress controller to be Ready
-      shell: kubectl wait --namespace ingress-nginx --for=condition=Ready pods --selector=app.kubernetes.io/component=controller --timeout=120s
+    - name: Wait for ingress-nginx namespace to exist
+      shell: kubectl get ns ingress-nginx
+      register: ns_check
+      until: ns_check.rc == 0
+      retries: 10
+      delay: 5
+
+    - name: Wait for NGINX ingress controller pods
+      shell: kubectl get pods -n ingress-nginx --selector=app.kubernetes.io/name=ingress-nginx --no-headers
+      register: nginx_pods
+      until: nginx_pods.stdout != ""
+      retries: 15
+      delay: 10
+
+    - name: Wait NGINX ingress controller Ready
+      shell: kubectl wait --namespace ingress-nginx --for=condition=Ready pods --selector=app.kubernetes.io/name=ingress-nginx --timeout=180s
 
     # ==========================
     # 5️⃣ Install ArgoCD
