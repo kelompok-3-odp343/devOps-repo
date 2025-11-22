@@ -43,7 +43,7 @@ gcloud compute project-info add-metadata \
 
 echo "===== [9] Clone infra repo ====="
 mkdir -p /home
-sudo git clone https://github.com/kelompok-3-odp343/infra.git /home/infra
+sudo git clone -b staging https://github.com/kelompok-3-odp343/infra.git /home/infra
 chown -R adamalhafizh23:adamalhafizh23 /home/infra
 sudo chmod +x /home/infra/terraform/generate_inventory.sh
 /home/infra/terraform/generate_inventory.sh

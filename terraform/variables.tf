@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "GCP Project ID"
   type        = string
-  default     = "wandoor-odpit343"
+  default     = "wandoor-prod-odp343"
 }
 
 variable "region" {

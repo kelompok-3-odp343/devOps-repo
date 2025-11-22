@@ -25,11 +25,36 @@
     # ==========================
     # 2️⃣ Install K3s Master
     # ==========================
+    - name: Cek apakah k3s service ada
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: k3s_service
+
+    - name: Hentikan dan hapus k3s jika service ada
+      when: k3s_service.stat.exists
+      block:
+        - name: Stop k3s service
+          systemd:
+            name: k3s
+            state: stopped
+            enabled: no
+
+        - name: Remove k3s binary dan service file
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /usr/local/bin/k3s
+            - /etc/systemd/system/k3s.service
+
+        - name: Reload systemd daemon
+          command: systemctl daemon-reload
+
     - name: Install K3s master node
       shell: |
         sudo curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --flannel-backend=vxlan
       args:
-        creates: /usr/local/bin/k3s
+        creates: /etc/systemd/system/k3s.service
 
     - name: Ensure K3s service is enabled and running
       systemd:
@@ -82,44 +107,47 @@
     # ==========================
     - name: Patch ArgoCD server service to NodePort
       shell: |
-        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort", "ports":[{"port": 443,"targetPort": 443,"nodePort": 31453}]}}'
+        sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort", "ports": [{"port": 80, "nodePort": 31453}]}}'
+
+    # # ==========================
+    # # 8️⃣ Clone or Update Infra Repository
+    # # ==========================
+    # - name: Allow repo directory as safe
+    #   ansible.builtin.command: sudo git config --global --add safe.directory /home/infra
+
+    # - name: Check if repo already exists
+    #   stat:
+    #     path: "{{ repo_dir }}/.git"
+    #   register: repo_git
+
+    # - name: Clone infra repository (first time)
+    #   git:
+    #     repo: "{{ repo_url }}"
+    #     dest: "{{ repo_dir }}"
+    #     version: main
+    #     force: yes
+    #   when: not repo_git.stat.exists
+
+    # - name: Pull latest changes (if repo already exists)
+    #   shell: sudo git pull origin main
+    #   args:
+    #     chdir: "{{ repo_dir }}"
+    #   when: repo_git.stat.exists
 
     # ==========================
-    # 8️⃣ Clone or Update Infra Repository
-    # ==========================
-    - name: Allow repo directory as safe
-      ansible.builtin.command: sudo git config --global --add safe.directory /home/infra
-
-    - name: Check if repo already exists
-      stat:
-        path: "{{ repo_dir }}/.git"
-      register: repo_git
-
-    - name: Clone infra repository (first time)
-      git:
-        repo: "{{ repo_url }}"
-        dest: "{{ repo_dir }}"
-        version: main
-        force: yes
-      when: not repo_git.stat.exists
-
-    - name: Pull latest changes (if repo already exists)
-      shell: sudo git pull origin main
-      args:
-        chdir: "{{ repo_dir }}"
-      when: repo_git.stat.exists
-
-    # ==========================
-    # 9️⃣ Apply Backend & Frontend k3s Manifests
+    # 9️⃣ Apply Backend, Frontend, & LGTM k3s Manifests
     # ==========================
     - name: Apply namespace manifests
-      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/namespace.yaml
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/wandoor-namespace.yaml
 
-    - name: Apply backend manifests
-      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/backend-wandoor/
+    - name: Apply namespace manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/frontend-wandoor/
 
-    - name: Apply frontend manifests
-      shell: sudo kubectl apply -f {{ repo_dir }}/k3s/frontend-wandoor/
+    - name: Apply namespace manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/backend-wandoor/
+
+    - name: Apply namespace manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/monitoring-wandoor/vm-master/
 
     # ==========================
     # 🔟 Apply ArgoCD Application Manifests (frontend, backend, database, monitoring)

@@ -1,27 +1,100 @@
 ---
-- name: 📊 Setup Monitoring Stack (LGTM)
-  hosts: monitoring
+- name: Setup Oracle Database & Redis Server using Docker Compose
+  hosts: db
   become: yes
 
   vars:
-    monitoring_dir: /home/monitoring
-    repo_dir: /home/infra
     repo_url: "https://github.com/kelompok-3-odp343/infra.git"
+    repo_dir: "/home/infra"
+    compose_dir: "/home/infra/monitoring-wandoor/docker-compose/"
 
   tasks:
+    # # ==========================
+    # # 1️⃣ Cleanup ALL Docker-related repos & keys
+    # # ==========================
+    # - name: Remove ALL Docker repo files (including Ubuntu remnants)
+    #   shell: |
+    #     rm -f /etc/apt/sources.list.d/docker*.list
+    #     rm -f /etc/apt/sources.list.d/*docker*.list
+    #     rm -f /etc/apt/sources.list.d/download_docker*.list
+    #   ignore_errors: yes
+
+    # - name: Remove ALL Docker GPG keys
+    #   shell: |
+    #     rm -f /etc/apt/keyrings/docker*
+    #     rm -f /usr/share/keyrings/docker*
+    #   ignore_errors: yes
+
+    # - name: Clean apt cache after repo removal
+    #   apt:
+    #     update_cache: yes
+    #     cache_valid_time: 0
+    #   ignore_errors: yes
+
     # ==========================
-    # 1️⃣ Install Git
+    # 2️⃣ Install base dependencies
     # ==========================
-    - name: Install git
+    - name: Install basic dependencies
       apt:
-        name: git
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - gnupg
+          - lsb-release
         state: present
         update_cache: yes
 
     # ==========================
-    # 2️⃣ Clone atau Pull Repo Infra
+    # 3️⃣ Setup Docker official GPG & repo for DEBIAN
     # ==========================
-    - name: Check if repo already exists
+    - name: Ensure /etc/apt/keyrings exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker official GPG key for Debian
+      shell: |
+        curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    - name: Add Docker apt repository for Debian 12 Bookworm
+      copy:
+        dest: /etc/apt/sources.list.d/docker.list
+        content: |
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable
+        mode: "0644"
+
+    - name: Update apt cache after adding Docker repo
+      apt:
+        update_cache: yes
+
+    # ==========================
+    # 4️⃣ Install Docker Engine & Compose Plugin
+    # ==========================
+    - name: Install Docker engine
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure Docker is running
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    # ==========================
+    # 5️⃣ Clone or update infra repo
+    # ==========================
+    - name: Check if infra repo exists
       stat:
         path: "{{ repo_dir }}/.git"
       register: repo_git
@@ -30,86 +103,34 @@
       git:
         repo: "{{ repo_url }}"
         dest: "{{ repo_dir }}"
-        version: main
+        version: production
         force: yes
       when: not repo_git.stat.exists
 
     - name: Pull latest changes (if repo already exists)
-      shell: git pull origin main
+      shell: git pull origin production
       args:
         chdir: "{{ repo_dir }}"
       when: repo_git.stat.exists
-
-    # ==========================
-    # 3️⃣ Update sistem & install dependency dasar
-    # ==========================
-    - name: Update apt dan install dependency
-      apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-        state: present
-        update_cache: yes
-
-    # ==========================
-    # 4️⃣ Install Docker
-    # ==========================
-    - name: Add Docker GPG key
-      apt_key:
-        url: https://download.docker.com/linux/debian/gpg
-        state: present
-
-    - name: Add Docker repository for Debian bookworm
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable"
-        state: present
-
-    - name: Install Docker engine
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-        state: present
-        update_cache: yes
-
-    - name: Ensure Docker service is running
-      systemd:
-        name: docker
-        enabled: yes
-        state: started
-
-    # ==========================
-    # 5️⃣ Install Docker Compose
-    # ==========================
-    - name: Cek apakah docker-compose sudah terpasang
-      command: docker-compose --version
-      register: compose_check
       ignore_errors: yes
 
-    - name: Install docker-compose jika belum ada
-      shell: |
-        curl -L "https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-      when: compose_check.rc != 0
+    # ==========================
+    # 6️⃣ Run docker compose
+    # ==========================
+    - name: Run docker compose up -d
+      shell: docker compose up -d
+      args:
+        chdir: "{{ compose_dir }}"
 
     # ==========================
-    # 6️⃣ Buat folder monitoring
+    # 7️⃣ Show running containers
     # ==========================
-    - name: Create monitoring directory
-      file:
-        path: "{{ monitoring_dir }}"
-        state: directory
-        mode: "0755"
+    - name: Check running containers
+      shell: docker ps
+      register: container_status
 
-    # ==========================
-    # 7️⃣ Copy docker-compose.yml
-    # ==========================
-    - name: Copy docker-compose.yml from infra repo
-      copy:
-        src: "{{ repo_dir }}/monitoring-wandoor/docker-compose.yml"
-        dest: "{{ monitoring_dir }}/docker-compose.yml"
-        remote_src: yes
-        mode: "0644"
+    - debug:
+        msg: |
+          🚀 Docker Compose Deploy Completed!
+          === Container Status ===
+          {{ container_status.stdout }}

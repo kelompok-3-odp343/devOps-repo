@@ -5,31 +5,31 @@
 
   vars:
     repo_url: "https://github.com/kelompok-3-odp343/infra.git"
-    repo_dir: "/opt/infra"
-    compose_dir: "/opt/infra/database-wandoor"
+    repo_dir: "/home/infra"
+    compose_dir: "/home/infra/database-wandoor"
 
   tasks:
-    # ==========================
-    # 1️⃣ Cleanup ALL Docker-related repos & keys
-    # ==========================
-    - name: Remove ALL Docker repo files (including Ubuntu remnants)
-      shell: |
-        rm -f /etc/apt/sources.list.d/docker*.list
-        rm -f /etc/apt/sources.list.d/*docker*.list
-        rm -f /etc/apt/sources.list.d/download_docker*.list
-      ignore_errors: yes
+    # # ==========================
+    # # 1️⃣ Cleanup ALL Docker-related repos & keys
+    # # ==========================
+    # - name: Remove ALL Docker repo files (including Ubuntu remnants)
+    #   shell: |
+    #     rm -f /etc/apt/sources.list.d/docker*.list
+    #     rm -f /etc/apt/sources.list.d/*docker*.list
+    #     rm -f /etc/apt/sources.list.d/download_docker*.list
+    #   ignore_errors: yes
 
-    - name: Remove ALL Docker GPG keys
-      shell: |
-        rm -f /etc/apt/keyrings/docker*
-        rm -f /usr/share/keyrings/docker*
-      ignore_errors: yes
+    # - name: Remove ALL Docker GPG keys
+    #   shell: |
+    #     rm -f /etc/apt/keyrings/docker*
+    #     rm -f /usr/share/keyrings/docker*
+    #   ignore_errors: yes
 
-    - name: Clean apt cache after repo removal
-      apt:
-        update_cache: yes
-        cache_valid_time: 0
-      ignore_errors: yes
+    # - name: Clean apt cache after repo removal
+    #   apt:
+    #     update_cache: yes
+    #     cache_valid_time: 0
+    #   ignore_errors: yes
 
     # ==========================
     # 2️⃣ Install base dependencies
@@ -103,12 +103,12 @@
       git:
         repo: "{{ repo_url }}"
         dest: "{{ repo_dir }}"
-        version: main
+        version: production
         force: yes
       when: not repo_git.stat.exists
 
     - name: Pull latest changes (if repo already exists)
-      shell: git pull origin main
+      shell: git pull origin production
       args:
         chdir: "{{ repo_dir }}"
       when: repo_git.stat.exists

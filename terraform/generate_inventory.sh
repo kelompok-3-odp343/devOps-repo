@@ -39,7 +39,6 @@ db ansible_host=$DB_IP ansible_user=adamalhafizh23
 [worker]
 wandoor-worker-1 ansible_host=$WORKER1_IP ansible_user=adamalhafizh23
 
-
 [monitoring]
 monitoring ansible_host=$MONITORING_IP ansible_user=adamalhafizh23
 

@@ -134,10 +134,10 @@ resource "google_compute_address" "master_ip" {
   region = var.region
 }
 
-resource "google_compute_address" "db_ip" {
-  name = "wandoor-db-ip"
-  region = var.region
-}
+# resource "google_compute_address" "db_ip" {
+#   name = "wandoor-db-ip"
+#   region = var.region
+# }
 
 # ==================== #
 # VM1: MASTER NODE (ArgoCD)
@@ -190,7 +190,7 @@ resource "google_compute_instance" "wandoor-db" {
 
   network_interface {
     network = "default"
-    access_config {nat_ip = google_compute_address.db_ip.address}
+    access_config {}
   }
 
   # metadata_startup_script = file("${path.module}/scripts/database-vm-init.sh")
@@ -225,8 +225,6 @@ resource "google_compute_instance" "wandoor-worker-1" {
     access_config {}
   }
 
-  # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
-
   service_account {
     scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -235,9 +233,9 @@ resource "google_compute_instance" "wandoor-worker-1" {
   }
 }
 
-# ==================== #
-# VM4: WORKER 2 (Frontend + Backend)
-# ==================== #
+# # ==================== #
+# # VM4: WORKER 2 (Frontend + Backend)
+# # ==================== #
 # resource "google_compute_instance" "wandoor-worker-2" {
 #   name         = "wandoor-worker-2"
 #   machine_type = "e2-standard-2"
@@ -254,14 +252,12 @@ resource "google_compute_instance" "wandoor-worker-1" {
 
 #   network_interface {
 #     network = "default"
-#     # access_config {}
+#     access_config {}
 #   }
 
 #   metadata = {
 #     master_ip = google_compute_instance.wandoor-master.network_interface[0].network_ip
 #   }
-
-#   # metadata_startup_script = file("${path.module}/scripts/vm-worker-init.sh")
 
 #   service_account {
 #     scopes = [
@@ -292,10 +288,8 @@ resource "google_compute_instance" "wandoor-monitoring" {
 
   network_interface {
     network = "default"
-    access_config {} # Monitoring tetap punya external IP
+    access_config {} 
   }
-
-  # metadata_startup_script = file("${path.module}/scripts/init-common.sh")
 
   service_account {
     scopes = [

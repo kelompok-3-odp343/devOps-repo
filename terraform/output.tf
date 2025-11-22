@@ -18,11 +18,11 @@ output "vm_ips" {
     }
     worker1 = {
       private_ip = google_compute_instance.wandoor-worker-1.network_interface[0].network_ip
-      # public_ip  = google_compute_instance.wandoor-worker-1.network_interface[0].access_config[0].nat_ip
+      public_ip  = google_compute_instance.wandoor-worker-1.network_interface[0].access_config[0].nat_ip
     }
     # worker2 = {
     #   private_ip = google_compute_instance.wandoor-worker-2.network_interface[0].network_ip
-    #   # public_ip  = google_compute_instance.wandoor-worker-2.network_interface[0].access_config[0].nat_ip
+    #   public_ip  = google_compute_instance.wandoor-worker-2.network_interface[0].access_config[0].nat_ip
     # }
   }
 }
@@ -33,11 +33,11 @@ output "vm_ips" {
     value       = "http://${google_compute_instance.wandoor-master.network_interface[0].access_config[0].nat_ip}"
   }
 
-  output "ssh_commands" {
-    description = "SSH Commands"
-    value = {
-      vm1 = "gcloud compute ssh wandoor-app --zone=${var.zone}"
-      vm2 = "gcloud compute ssh wandoor-db --zone=${var.zone} --internal-ip"
-      vm3 = "gcloud compute ssh wandoor-monitoring --zone=${var.zone}"
-    }
-  }
+  # output "ssh_commands" {
+  #   description = "SSH Commands"
+  #   value = {
+  #     vm1 = "gcloud compute ssh wandoor-app --zone=${var.zone}"
+  #     vm2 = "gcloud compute ssh wandoor-db --zone=${var.zone} --internal-ip"
+  #     vm3 = "gcloud compute ssh wandoor-monitoring --zone=${var.zone}"
+  #   }
+  # }
