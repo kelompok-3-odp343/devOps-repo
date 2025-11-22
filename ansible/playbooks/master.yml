@@ -8,6 +8,7 @@
     argocd_manifest_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
     repo_url: https://github.com/kelompok-3-odp343/infra.git
     repo_dir: /home/infra
+    nginx_ingress_manifest: "https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml"
 
   tasks:
     # ==========================
@@ -23,7 +24,7 @@
         update_cache: yes
 
     # ==========================
-    # 2️⃣ Install K3s Master
+    # 2️⃣ Install / Reinstall K3s (disable Traefik)
     # ==========================
     - name: Cek apakah k3s service ada
       stat:
@@ -50,9 +51,9 @@
         - name: Reload systemd daemon
           command: systemctl daemon-reload
 
-    - name: Install K3s master node
+    - name: Install K3s master node tanpa Traefik
       shell: |
-        sudo curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --flannel-backend=vxlan
+        curl -sfL {{ k3s_install_script }} | sh -s - server --cluster-init --disable=traefik --flannel-backend=vxlan
       args:
         creates: /etc/systemd/system/k3s.service
 
@@ -73,7 +74,16 @@
       delay: 10
 
     # ==========================
-    # 4️⃣ Install ArgoCD
+    # 4️⃣ Install NGINX Ingress Controller
+    # ==========================
+    - name: Deploy NGINX Ingress Controller
+      shell: kubectl apply -f {{ nginx_ingress_manifest }}
+
+    - name: Wait for NGINX ingress controller to be Ready
+      shell: kubectl wait --namespace ingress-nginx --for=condition=Ready pods --selector=app.kubernetes.io/component=controller --timeout=120s
+
+    # ==========================
+    # 5️⃣ Install ArgoCD
     # ==========================
     - name: Create namespace for ArgoCD
       shell: sudo kubectl create namespace {{ argocd_namespace }} || true
@@ -82,7 +92,7 @@
       shell: sudo kubectl apply -n {{ argocd_namespace }} -f {{ argocd_manifest_url }}
 
     # ==========================
-    # 5️⃣ Wait for ArgoCD Pods Running
+    # 6️⃣ Wait for ArgoCD Pods Running
     # ==========================
     - name: Wait for ArgoCD pods to be ready
       shell: sudo kubectl get pods -n {{ argocd_namespace }} --no-headers
@@ -92,7 +102,7 @@
       delay: 15
 
     # ==========================
-    # 6️⃣ Show ArgoCD Admin Password
+    # 7️⃣ Show ArgoCD Admin Password
     # ==========================
     - name: Get ArgoCD admin password
       shell: sudo kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
@@ -103,39 +113,14 @@
         msg: "🔐 ArgoCD admin password: {{ argocd_password.stdout }}"
 
     # ==========================
-    # 7️⃣ Patch ArgoCD Service -> NodePort
+    # 8️⃣ Patch ArgoCD Service -> NodePort
     # ==========================
     - name: Patch ArgoCD server service to NodePort
       shell: |
         sudo kubectl -n {{ argocd_namespace }} patch svc argocd-server -p '{"spec": {"type": "NodePort", "ports": [{"port": 80, "nodePort": 31453}]}}'
 
-    # # ==========================
-    # # 8️⃣ Clone or Update Infra Repository
-    # # ==========================
-    # - name: Allow repo directory as safe
-    #   ansible.builtin.command: sudo git config --global --add safe.directory /home/infra
-
-    # - name: Check if repo already exists
-    #   stat:
-    #     path: "{{ repo_dir }}/.git"
-    #   register: repo_git
-
-    # - name: Clone infra repository (first time)
-    #   git:
-    #     repo: "{{ repo_url }}"
-    #     dest: "{{ repo_dir }}"
-    #     version: main
-    #     force: yes
-    #   when: not repo_git.stat.exists
-
-    # - name: Pull latest changes (if repo already exists)
-    #   shell: sudo git pull origin main
-    #   args:
-    #     chdir: "{{ repo_dir }}"
-    #   when: repo_git.stat.exists
-
     # ==========================
-    # 9️⃣ Apply Backend, Frontend, & LGTM k3s Manifests
+    # 9️⃣ Apply Project Manifests (frontend, backend, monitoring)
     # ==========================
     - name: Apply namespace manifests
       shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/namespace.yaml
@@ -149,8 +134,5 @@
     - name: Apply lgtm-agents
       shell: sudo kubectl apply -f {{ repo_dir }}/monitoring-wandoor/vm-master/
 
-    # ==========================
-    # 🔟 Apply ArgoCD Application Manifests (frontend, backend, database, monitoring)
-    # ==========================
     - name: Apply ArgoCD application manifests
       shell: sudo kubectl apply -f {{ repo_dir }}/argoCD/
