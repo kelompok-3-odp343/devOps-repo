@@ -6,7 +6,7 @@
   vars:
     repo_url: "https://github.com/kelompok-3-odp343/infra.git"
     repo_dir: "/home/infra"
-    compose_dir: "/home/infra/monitoring-wandoor/docker-compose/"
+    compose_dir: "/home/infra/monitoring-wandoor/vm-monitoring/docker-compose"
 
   tasks:
     # # ==========================

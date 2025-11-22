@@ -140,13 +140,13 @@
     - name: Apply namespace manifests
       shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/namespace.yaml
 
-    - name: Apply namespace manifests
+    - name: Apply frontend
       shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/frontend-wandoor/
 
-    - name: Apply namespace manifests
+    - name: Apply backend
       shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/backend-wandoor/
 
-    - name: Apply namespace manifests
+    - name: Apply lgtm-agents
       shell: sudo kubectl apply -f {{ repo_dir }}/monitoring-wandoor/vm-master/
 
     # ==========================
