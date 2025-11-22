@@ -13,7 +13,7 @@ data:
       filename: /tmp/positions.yaml
 
     clients:
-      - url: http://10.148.15.213:3100/loki/api/v1/push
+      - url: http://wandoor-monitoring:3100/loki/api/v1/push
 
     scrape_configs:
       - job_name: container-logs
@@ -122,7 +122,7 @@ metadata:
   namespace: monitoring
 spec:
   type: ExternalName
-  externalName: 10.148.15.213  # <- Ganti dengan IP Loki VM kamu
+  externalName: 10.148.15.213 # <- Ganti dengan IP Loki VM kamu
   ports:
     - port: 80
       targetPort: 3100
