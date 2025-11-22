@@ -1,6 +1,6 @@
 ---
 - name: Setup Oracle Database & Redis Server using Docker Compose
-  hosts: db
+  hosts: monitoring
   become: yes
 
   vars:
