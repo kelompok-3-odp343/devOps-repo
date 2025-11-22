@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: app.wandoor.my.id
+    - host: 35.240.135.52
       http:
         paths:
           - path: /
