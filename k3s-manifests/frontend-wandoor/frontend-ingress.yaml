@@ -31,7 +31,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - http:
+    - host: wandoor.my.id # ⬅️ tambahkan host
+      http:
         paths:
           - path: /
             pathType: Prefix
