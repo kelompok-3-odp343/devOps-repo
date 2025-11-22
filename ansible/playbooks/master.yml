@@ -138,7 +138,7 @@
     # 9️⃣ Apply Backend, Frontend, & LGTM k3s Manifests
     # ==========================
     - name: Apply namespace manifests
-      shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/wandoor-namespace.yaml
+      shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/namespace.yaml
 
     - name: Apply namespace manifests
       shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/frontend-wandoor/
