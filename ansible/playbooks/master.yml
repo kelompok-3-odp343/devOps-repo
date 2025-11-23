@@ -136,6 +136,9 @@
     - name: Apply namespace manifests
       shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/namespace.yaml
 
+    - name: Apply namespace manifests
+      shell: sudo kubectl apply -f {{ repo_dir }}/monitoring-wandoor/monitoring-namespace.yaml
+
     - name: Apply frontend
       shell: sudo kubectl apply -f {{ repo_dir }}/k3s-manifests/frontend-wandoor/
 
