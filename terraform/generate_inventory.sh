@@ -31,16 +31,16 @@ cat <<EOF > $OUTPUT_FILE
 # Jalankan dengan: ansible-playbook -i inventory.ini site.yml
 
 [master]
-master ansible_host=$MASTER_IP ansible_user=adamalhafizh23
+master-node ansible_host=10.148.0.12 ansible_user=adamalhafizh23 ansible_ssh_private_key_file=~/.ssh/id_rsa
 
 [db]
-db ansible_host=$DB_IP ansible_user=adamalhafizh23
-
-[worker]
-wandoor-worker-1 ansible_host=$WORKER1_IP ansible_user=adamalhafizh23
+db-node ansible_host=10.148.0.3 ansible_user=adamalhafizh23 ansible_ssh_private_key_file=~/.ssh/id_rsa
 
 [monitoring]
-monitoring ansible_host=$MONITORING_IP ansible_user=adamalhafizh23
+monitoring-node ansible_host=10.148.0.9 ansible_user=adamalhafizh23 ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+[worker]
+worker-1-node ansible_host=10.148.0.4 ansible_user=adamalhafizh23 ansible_ssh_private_key_file=~/.ssh/id_rsa
 
 [all:vars]
 ansible_ssh_private_key_file=~/.ssh/id_rsa
