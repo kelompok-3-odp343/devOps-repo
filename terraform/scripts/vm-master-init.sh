@@ -35,7 +35,9 @@ PUBKEY=$(cat /home/adamalhafizh23/.ssh/id_rsa.pub)
 echo "===== [8] Register public key at PROJECT level ====="
 echo "adamalhafizh23:$PUBKEY" > /tmp/sshkey.txt
 
-PROJECT_ID=$(gcloud config get-value project)
+PROJECT_ID=$(curl -H "Metadata-Flavor: Google" \
+  http://metadata.google.internal/computeMetadata/v1/project/project-id)
+
 
 gcloud compute project-info add-metadata \
   --metadata-from-file ssh-keys=/tmp/sshkey.txt \
