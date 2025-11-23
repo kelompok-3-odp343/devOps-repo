@@ -256,6 +256,13 @@ resource "google_compute_instance" "wandoor-db" {
     network        = "default"
     access_config {}
   }
+
+    service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/monitoring.write"
+    ]
+  }
 }
 
 resource "google_compute_instance" "wandoor-worker-1" {
@@ -279,6 +286,13 @@ resource "google_compute_instance" "wandoor-worker-1" {
     network        = "default"
     access_config {}
   }
+
+    service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/monitoring.write"
+    ]
+  }
 }
 
 resource "google_compute_instance" "wandoor-monitoring" {
@@ -301,5 +315,12 @@ resource "google_compute_instance" "wandoor-monitoring" {
   network_interface {
     network        = "default"
     access_config {}
+  }
+
+    service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/monitoring.write"
+    ]
   }
 }
