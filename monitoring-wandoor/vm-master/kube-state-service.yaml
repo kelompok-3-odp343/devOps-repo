@@ -11,6 +11,6 @@ spec:
     - name: http-metrics
       port: 8080
       targetPort: http-metrics
-      nodePort: 33080 # <--- port eksternal di node
+      nodePort: 31080 # <--- port eksternal di node
   selector:
     app.kubernetes.io/name: kube-state-metrics
