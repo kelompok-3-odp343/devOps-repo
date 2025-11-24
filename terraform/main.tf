@@ -159,7 +159,8 @@ resource "google_compute_instance_group" "wandoor_group" {
   zone      = var.zone
   instances = [
     google_compute_instance.wandoor-master.self_link,
-    google_compute_instance.wandoor-worker-1.self_link
+    google_compute_instance.wandoor-worker-1.self_link,
+    google_compute_instance.wandoor-monitoring.self_link
   ]
 
   named_port {
