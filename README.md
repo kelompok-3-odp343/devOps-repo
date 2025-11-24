@@ -1,7 +1,5 @@
 # devOps-repo
-==================================================
-MONITORING
-==================================================
+# MONITORING
 Repositori ini berisi seluruh konfigurasi dan panduan untuk membangun sistem Monitoring, Logging, dan Tracing pada environment Kubernetes + VM.
 
 Stack ini terdiri dari:
@@ -26,4 +24,4 @@ Setup pada VM Master:
 3. Install kube-state-metrics (Deployment + Service + RBAC) dengan perintah "kubectl apply -f kube-state-metrics.yaml" dan "kubectl apply -f rbac/kube-state-metrics-rbac.yaml"
 4. Install Promtail (Logs → Loki) dengan perintah "kubectl apply -f promtail-daemonset.yaml"
 5. Install OTel Collector (Traces → Tempo) dengan perintah "kubectl apply -f otel-daemonset.yaml"
-=======================================================
+
