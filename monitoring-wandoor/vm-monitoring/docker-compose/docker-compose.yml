@@ -16,7 +16,7 @@ services:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
-      - /home/infra/monitoring-wandoor/vm-monitoring/grafana-data:/var/lib/grafana
+      # - /home/infra/monitoring-wandoor/vm-monitoring/grafana-data:/var/lib/grafana
       - ./loki-data:/loki
       - ./loki-wal:/wal
   tempo:
@@ -41,17 +41,6 @@ services:
       - tempo
     volumes:
       - ./grafana-data:/var/lib/grafana
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    restart: always
-    network_mode: "host"
-    pid: "host"
-    volumes:
-      - /:/host:ro,rslave
-    command:
-      - "--path.rootfs=/host"
-
   uptime-kuma:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
