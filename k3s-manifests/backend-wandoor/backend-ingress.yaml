@@ -9,7 +9,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - http:
+    - host: api.wandoor.my.id
+      http:
         paths:
           - path: /
             pathType: Prefix
