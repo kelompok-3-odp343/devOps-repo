@@ -13,7 +13,6 @@ spec:
       labels:
         app: wandoor-backend
     spec:
-      # -- INIT CONTAINER (Download java agent)
       initContainers:
         - name: download-otel-agent
           image: busybox:latest
@@ -37,46 +36,62 @@ spec:
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:oracle:thin:@wandoor-db:1521/wandoor_db"
-            - name: SPRING_DATASOURCE_USERNAME
-              value: "wandoor"
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: "root"
             - name: SERVER_PORT
               value: "8081"
             - name: REDIS_HOST
               value: "wandoor-db"
             - name: REDIS_PORT
               value: "6379"
-            - name: REDIS_PASSWORD
-              value: "rediswandoor"
 
-            # ========================================
-            # OTEL - TRACES, METRICS, LOGS
-            # ========================================
+            # Credential from Secret
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: wandoor-backend-secrets
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wandoor-backend-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wandoor-backend-secrets
+                  key: REDIS_PASSWORD
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: wandoor-backend-secrets
+                  key: MAIL_USERNAME
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wandoor-backend-secrets
+                  key: MAIL_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: wandoor-backend-secrets
+                  key: JWT_SECRET
+
+            # OTEL - Traces, Metrics, Logs
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://otel-collector.monitoring.svc.cluster.local:4317"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: "grpc"
-
-            # ENABLE TRACES, METRICS, LOGS
             - name: OTEL_TRACES_EXPORTER
               value: "otlp"
             - name: OTEL_METRICS_EXPORTER
               value: "otlp"
             - name: OTEL_LOGS_EXPORTER
               value: "otlp"
-
-            # Resource Attributes
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: "service.name=wandoor-backend"
             - name: OTEL_TRACES_SAMPLER
               value: "always_on"
-
-            # OPTIONAL — biar log structured lebih bagus
             - name: OTEL_LOGS_INCLUDE_STACKTRACE
               value: "true"
-
-            # Java Agent Attachment
             - name: JAVA_TOOL_OPTIONS
               value: "-javaagent:/otel/opentelemetry-javaagent.jar"
 
